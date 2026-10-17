@@ -1,2 +1,10 @@
 # SwipEdit
-Swipetava web-based map editor
+Веб-редактор карт для Swipetava
+------
+## ПРЕДУПРЕЖДАЮ СРАЗУ!!!
+Там очень сильно навайбкодено. Комментарии вроде почистил, но если что, пишите в issues; разберусь. Вы можете делать всё что угодно с репозиторием и кодом, находящимся там. Распространяется по лицензии WTFPL. Буду рад водонтёрам, готовым помочь разобрать весь этот бардак в файлах.
+------
+На момент написания README игра Swipetava не имеет встроенного редактора карт, а её код пока остаётся закрытым. Возможно, со временем, ситуация изменится в лучшую сторону.
+------
+# Скачать Swipetava
+<a href="https://play.google.com/store/apps/details?id=swipetava.rhythm.game"><img src="https://raw.githubusercontent.com/pioug/google-play-badges/refs/heads/main/svg/en.svg" width="300"
