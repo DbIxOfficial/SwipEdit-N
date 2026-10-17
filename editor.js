@@ -1032,7 +1032,7 @@
       if (st.lastHitNote) {
         ctx.font = '700 15px system-ui, sans-serif';
         ctx.fillStyle = '#fde047';
-        ctx.fillText('SWAG!!', W / 2, centerTextY + 16);
+        ctx.fillText('PERFECT!', W / 2, centerTextY + 16);
       }
     }
     ctx.restore();
