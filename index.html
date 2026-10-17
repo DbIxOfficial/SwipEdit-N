@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SwipEdit— Редактор карт (.swmap)</title>
+  <style>
+    :root {
+      --bg-0: #07060e;
+      --bg-1: #0f0d1c;
+      --bg-2: #161329;
+      --bg-3: #1f1b38;
+      --border: #2c264f;
+      --border-hi: #4b3f85;
+      --text-primary: #f1f0ff;
+      --text-secondary: #a8a2cc;
+      --text-muted: #6c6594;
+      --accent: #a855f7;
+      --accent-2: #38bdf8;
+      --success: #22c55e;
+      --danger: #f43f5e;
+      --warning: #f59e0b;
+      --radius: 10px;
+      --radius-sm: 6px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-0);
+      color: var(--text-primary);
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      line-height: 1.4;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      user-select: none;
+    }
+
+    /* Верхний тулбар */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      background: linear-gradient(180deg, #151129 0%, #0d0b18 100%);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #a855f7 0%, #ec4899 55%, #38bdf8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+      color: #fff;
+      letter-spacing: -0.5px;
+      box-shadow: 0 0 16px rgba(168, 85, 247, 0.45);
+    }
+
+    .brand-title {
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: 0.3px;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .stats-bar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 5px 12px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .stats-bar strong {
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Кнопки и поля ввода */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 12px;
+      background: var(--bg-2);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.14s, border-color 0.14s, transform 0.08s;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      background: var(--bg-3);
+      border-color: var(--border-hi);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+      border-color: #c084fc;
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #8b5cf6 0%, #b666f9 100%);
+      border-color: #d8b4fe;
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      border-color: #34d399;
+      color: #ffffff;
+    }
+
+    .btn-danger {
+      background: rgba(244, 63, 94, 0.16);
+      border-color: rgba(244, 63, 94, 0.45);
+      color: #fda4af;
+    }
+
+    .btn-danger:hover {
+      background: rgba(244, 63, 94, 0.28);
+      border-color: #f43f5e;
+    }
+
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+
+    .btn-xs {
+      padding: 2px 6px;
+      font-size: 10px;
+      background: rgba(244, 63, 94, 0.18);
+      color: #fda4af;
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .active-pill {
+      background: rgba(249, 115, 22, 0.25) !important;
+      box-shadow: 0 0 10px rgba(249, 115, 22, 0.35);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      background: var(--bg-0);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 6px 8px;
+      font-size: 12px;
+      font-family: inherit;
+      width: 100%;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+    }
+
+    input[type="color"] {
+      background: var(--bg-0);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      width: 42px;
+      height: 30px;
+      padding: 2px;
+      cursor: pointer;
+    }
+
+    /* Основная сетка рабочей области */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 330px minmax(360px, 1fr) 360px;
+      gap: 12px;
+      padding: 12px 16px;
+      flex: 1;
+      min-height: 460px;
+    }
+
+    @media (max-width: 1220px) {
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 9px 12px;
+      background: var(--bg-2);
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .panel-body {
+      padding: 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 540px;
+    }
+
+    .section-box {
+      background: rgba(22, 19, 41, 0.65);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent-2);
+      letter-spacing: 0.4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .field-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .field-row label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      min-width: 110px;
+    }
+
+    .field-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    /* Секция превью посередине */
+    .preview-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .canvas-frame {
+      width: 100%;
+      max-width: 680px;
+      aspect-ratio: 16 / 9;
+      background: #05040a;
+      border: 1px solid var(--border-hi);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #preview-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .transport-bar {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      flex-wrap: wrap;
+    }
+
+    .transport-left,
+    .transport-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .time-readout {
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: #38bdf8;
+      padding: 4px 8px;
+      background: var(--bg-0);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+    }
+
+    /* Крестовина 8 направлений + реверс-ноты */
+    .note-pad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .pad-btn {
+      background: var(--bg-0);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 8px 4px;
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      transition: all 0.12s;
+    }
+
+    .pad-btn:hover {
+      border-color: var(--note-col, var(--accent));
+      background: var(--bg-3);
+    }
+
+    .pad-btn.active {
+      background: rgba(168, 85, 247, 0.22);
+      border-color: var(--note-col, var(--accent));
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.35);
+    }
+
+    .pad-center {
+      background: linear-gradient(135deg, #312e81 0%, #4c1d95 100%);
+      border-color: #818cf8;
+      font-weight: 700;
+      font-size: 11px;
+    }
+
+    .pad-arrow {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--note-col, #fff);
+      line-height: 1;
+    }
+
+    .pad-label {
+      font-size: 9px;
+      color: var(--text-secondary);
+      letter-spacing: 0.2px;
+    }
+
+    /* Таблицы точек BPM и событий */
+    .compact-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    .compact-table th,
+    .compact-table td {
+      padding: 4px 6px;
+      border-bottom: 1px solid rgba(44, 38, 79, 0.6);
+      text-align: left;
+    }
+
+    .compact-table th {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .compact-table tr.selected-row {
+      background: rgba(168, 85, 247, 0.22);
+    }
+
+    .table-input {
+      padding: 3px 5px !important;
+      font-size: 11px !important;
+    }
+
+    .ev-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #090812;
+      font-weight: 800;
+      font-size: 10px;
+    }
+
+    .quick-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    /* Нижний таймлайн */
+    .timeline-dock {
+      background: var(--bg-1);
+      border-top: 1px solid var(--border);
+      padding: 8px 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .timeline-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .timeline-wrap {
+      width: 100%;
+      border: 1px solid var(--border-hi);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: #0c0a18;
+    }
+
+    #timeline-canvas {
+      display: block;
+      width: 100%;
+      height: 256px;
+      cursor: crosshair;
+    }
+
+    .status-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-secondary);
+      padding-top: 2px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .asset-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 11px;
+    }
+
+    .asset-status {
+      color: var(--text-secondary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 175px;
+    }
+
+    .cover-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      object-fit: cover;
+      background: var(--bg-0);
+      display: none;
+    }
+
+    .insp-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .insp-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #c084fc;
+    }
+
+    .empty-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .chk-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    /* Сенсорный Свайп-Пад для телефонов (8 направлений) */
+    .touch-swipe-pad {
+      position: relative;
+      width: 100%;
+      height: 176px;
+      border-radius: 14px;
+      background: radial-gradient(circle at center, rgba(124, 58, 237, 0.22) 0%, rgba(15, 13, 29, 0.96) 72%);
+      border: 1.5px solid var(--border-hi);
+      touch-action: none;
+      user-select: none;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 4px;
+      padding: 6px;
+      cursor: pointer;
+    }
+
+    .swipe-sector {
+      display: flex;
+       flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      transition: transform 0.1s, background 0.1s, border-color 0.1s;
+    }
+
+    .swipe-sector .sec-arrow {
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .swipe-sector.active {
+      background: rgba(56, 189, 248, 0.25);
+      border-color: var(--accent-2);
+      color: #fff;
+      transform: scale(1.04);
+    }
+
+    .swipe-center-hub {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-hi);
+      padding: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-primary);
+      pointer-events: none;
+    }
+
+    /* Кнопки тач-режима таймлайна */
+    .touch-mode-group {
+      display: inline-flex;
+      gap: 4px;
+      background: var(--bg-0);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .touch-mode-btn {
+      padding: 4px 9px;
+      font-size: 11px;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .touch-mode-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    #timeline-canvas {
+      touch-action: none;
+    }
+
+    /* Мобильная навигация по вкладкам на экранах телефонов */
+    .mobile-tab-bar {
+      display: none;
+      background: var(--bg-1);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 10px;
+      gap: 6px;
+      overflow-x: auto;
+    }
+
+    .mob-tab-btn {
+      flex: 1;
+      white-space: nowrap;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-2);
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .mob-tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent-2);
+    }
+
+    @media (max-width: 1100px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        overflow-y: auto;
+      }
+      .mobile-tab-bar {
+        display: flex;
+      }
+      .workspace-grid {
+        display: flex;
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
+      }
+      .panel {
+        max-height: none;
+        overflow: visible;
+      }
+      body[data-mob-view="studio"] .panel-meta,
+      body[data-mob-view="studio"] .panel-fx {
+        display: none;
+      }
+      body[data-mob-view="fx"] .panel-meta,
+      body[data-mob-view="fx"] .panel-preview {
+        display: none;
+      }
+      body[data-mob-view="meta"] .panel-preview,
+      body[data-mob-view="meta"] .panel-fx {
+        display: none;
+      }
+      .topbar {
+        padding: 8px 10px;
+        gap: 8px;
+      }
+      .brand-sub {
+        display: none;
+      }
+      .timeline-dock {
+        position: relative;
+        z-index: 10;
+      }
+      #timeline-canvas {
+        height: 210px;
+      }
+    }
+
+
+    /* Иконка в шапке в режиме RobTop (1/50) */
+    .brand-badge.robtop-mode {
+      padding: 0;
+      overflow: hidden;
+      cursor: pointer;
+      border: 1.5px solid #facc15;
+      box-shadow: 0 0 14px rgba(250, 204, 21, 0.55);
+      transition: transform 0.14s ease, box-shadow 0.14s ease;
+    }
+
+    .brand-badge.robtop-mode:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 20px rgba(250, 204, 21, 0.85);
+    }
+
+    .brand-badge.robtop-mode img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+
+    /* Модальное окно с кнопкой cubeface */
+    .cubeface-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(5, 4, 12, 0.82);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .cubeface-modal-backdrop[hidden] {
+      display: none !important;
+    }
+
+    .cubeface-modal-card {
+      width: 100%;
+      max-width: 380px;
+      background: linear-gradient(180deg, #1b1635 0%, #100d20 100%);
+      border: 1.5px solid var(--border-hi);
+      border-radius: 16px;
+      padding: 18px 20px 20px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.75);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      text-align: center;
+      position: relative;
+    }
+
+    .cubeface-modal-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--bg-2);
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cubeface-modal-close:hover {
+      color: #fff;
+      border-color: var(--border-hi);
+    }
+
+    .cubeface-btn {
+      background: radial-gradient(circle, rgba(250, 204, 21, 0.22) 0%, rgba(168, 85, 247, 0.08) 70%, transparent 100%);
+      border: 2px solid rgba(250, 204, 21, 0.45);
+      border-radius: 50%;
+      width: 124px;
+      height: 124px;
+      padding: 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.08s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+      box-shadow: 0 0 24px rgba(250, 204, 21, 0.25);
+    }
+
+    .cubeface-btn:hover {
+      border-color: #facc15;
+      box-shadow: 0 0 32px rgba(250, 204, 21, 0.5);
+      transform: scale(1.04);
+    }
+
+    .cubeface-btn:active,
+    .cubeface-btn.pressed {
+      transform: scale(0.9);
+      box-shadow: 0 0 40px rgba(56, 189, 248, 0.75);
+    }
+
+    .cubeface-btn img {
+      width: 92px;
+      height: 92px;
+      object-fit: contain;
+      image-rendering: auto;
+      pointer-events: none;
+    }
+
+    .vibecode-note {
+      width: 100%;
+      background: rgba(10, 8, 20, 0.78);
+      border: 1px dashed var(--border-hi);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text-primary);
+      user-select: text;
+    }
+
+    /* Нижний блок титров и лицензии WTFPL */
+    .credits-footer {
+      background: #080711;
+      border-top: 1px solid var(--border);
+      padding: 16px 20px 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      user-select: text;
+    }
+
+    .credits-grid {
+      width: 100%;
+      max-width: 1120px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+
+    .credits-card {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .credits-card-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--accent-2);
+    }
+
+    .credits-card-body {
+      font-size: 12px;
+      color: var(--text-primary);
+      line-height: 1.45;
+    }
+
+    .wtfpl-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      text-align: center;
+    }
+
+    .wtfpl-box a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .wtfpl-box a:hover {
+      border-color: var(--accent-2);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .wtfpl-badge-img {
+      height: 38px;
+      width: auto;
+      display: block;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- шапка -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-badge" id="brand-badge">SW</div>
+      <div>
+        <div class="brand-title">SwipEdit</div>
+        <div class="brand-sub">Автономный веб-редактор карт <code>.swmap</code> (meta.json + chart.json + ассеты)</div>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <span>Нот: <strong id="stat-notes-count">0</strong></span>
+      <span>Событий: <strong id="stat-events-count">0</strong></span>
+    </div>
+
+    <div class="toolbar-actions">
+      <label class="btn btn-primary" title="Открыть существующий .swmap или перетащить файл на страницу">
+        📂 Открыть .swmap
+        <input type="file" id="input-swmap-file" accept=".swmap,.zip" hidden />
+      </label>
+      <button type="button" class="btn" id="btn-load-demo" title="Загрузить демо-карту (Just chilll — Arvicheskyy)">
+        ✨ Демо
+      </button>
+      <button type="button" class="btn" id="btn-undo" title="Отменить (Ctrl+Z)">↶ Отмена</button>
+      <button type="button" class="btn" id="btn-redo" title="Повторить (Ctrl+Y)">↷ Повтор</button>
+      <button type="button" class="btn" id="btn-export-json" title="Скачать отдельно chart.json и meta.json">
+        📄 JSON
+      </button>
+      <button type="button" class="btn btn-success" id="btn-export-swmap" title="Собрать и скачать готовый архив .swmap для импорта в Swipetava">
+        💾 Скачать .swmap
+      </button>
+    </div>
+  </header>
+
+  <!-- рабочая область -->
+  <main class="workspace-grid">
+
+    <!-- левая колонка -->
+    <section class="panel panel-meta">
+      <div class="panel-header">
+        <span>1. Параметры карты и ресурсы</span>
+      </div>
+      <div class="panel-body">
+
+                <!-- Встроенная библиотека всех 11 официальных карт Swipetava OST -->
+        <div class="section-box">
+          <div class="section-title">
+            <span>🎵 Официальные карты</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-secondary);">
+            Выбери любую карту из альбома <code>Swipetava OST</code>, чтобы посмотреть её тайминги и эффекты или взять за основу:
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <select id="select-ost-preset" style="flex:1;"></select>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-load-ost-preset">Открыть</button>
+          </div>
+        </div>
+
+        <!-- конвертер -->
+        <div class="section-box">
+          <div class="section-title">
+            <span>🔧 Конвертер Godot 4 (.ctex / .oggvorbisstr)</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-secondary);">
+            Вытащил файлы из APKшника? Закинь сюда <code>.ctex</code> или <code>.oggvorbisstr</code> — редактор прямо в браузере перегонит их в чистые <code>.png</code> и <code>.ogg</code> и скачает обратно:
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <label class="btn btn-sm btn-primary">
+              ⚡ Выбрать .ctex / .oggvorbisstr
+              <input type="file" id="input-godot-converter" accept=".ctex,.stex,.oggvorbisstr,.oggstr" multiple hidden />
+            </label>
+            <label class="chk-label" title="Сразу подставить сконвертированный трек или обложку в открытую карту">
+              <input type="checkbox" id="check-godot-apply-map" checked /> Сразу вставить в карту
+            </label>
+          </div>
+          <div id="godot-converter-status" style="font-size:11px;color:var(--accent-2);"></div>
+        </div>
+
+        <!-- meta.json -->
+        <div class="section-box">
+          <div class="section-title">
+            <span>Карточка трека (meta.json)</span>
+          </div>
+          <div class="field-row">
+            <label for="meta-title">Название (title)</label>
+            <input type="text" id="meta-title" placeholder="Empress of Light" />
+          </div>
+          <div class="field-row">
+            <label for="meta-artist">Артист (artist)</label>
+            <input type="text" id="meta-artist" placeholder="Scott Lloyd Shelly" />
+          </div>
+          <div class="field-row">
+            <label for="meta-difficulty">Сложность (1–10)</label>
+            <div style="display:flex;align-items:center;gap:6px;width:100%;">
+              <input type="range" id="meta-difficulty" min="0.5" max="12" step="0.5" value="7" style="flex:1;" />
+              <input type="number" id="meta-difficulty-num" min="0.5" max="12" step="0.5" value="7" style="width:56px;" />
+            </div>
+          </div>
+          <div class="field-row">
+            <label for="meta-color">Цвет меню (hex)</label>
+            <input type="color" id="meta-color" value="#2a0a5e" />
+          </div>
+        </div>
+
+        <!-- Базовая скорость скролла и BPM (chart.json) -->
+        <div class="section-box">
+          <div class="section-title">
+            <span>Тайминг и базовая скорость скролла</span>
+            <button type="button" class="btn btn-sm" id="btn-tap-tempo" title="Нажимай в ритм для определения BPM">🥁 Tap BPM</button>
+          </div>
+          <div class="field-grid-2">
+            <div>
+              <label style="font-size:11px;color:var(--text-secondary);">Базовый BPM</label>
+              <input type="number" id="chart-bpm" min="20" max="400" step="0.5" value="165" />
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--text-secondary);">Сдвиг сетки (gridOffset, с)</label>
+              <input type="number" id="chart-grid-offset" step="0.005" value="0.09" />
+            </div>
+          </div>
+          <div class="field-row" style="margin-top:4px;">
+            <label for="chart-travel-time" title="Базовое время прилёта ноты от края к центру в миллисекундах (меньше = быстрее базовый скролл)">
+              Подлёт ноты (мс)
+            </label>
+            <input type="number" id="chart-travel-time" min="250" max="3000" step="25" value="1000" />
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);">
+            <code>noteTravelTime</code> задаёт базовую скорость подлёта (1000 мс по умолчанию), а динамические ускорения/замедления внутри трека ставятся событием <code>NOTE_SPEED</code>.
+          </div>
+        </div>
+
+        <!-- Точки смены BPM (timing[]) -->
+        <div class="section-box">
+          <div class="section-title">
+            <span>Точки темпа (timing[])</span>
+            <button type="button" class="btn btn-sm" id="btn-add-timing-point">+ Точка на курсоре</button>
+          </div>
+          <div style="max-height:110px;overflow-y:auto;">
+            <table class="compact-table">
+              <thead>
+                <tr>
+                  <th>Время (с)</th>
+                  <th>BPM</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="timing-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Ассеты архива .swmap -->
+        <div class="section-box">
+          <div class="section-title">
+            <span>Файлы внутри .swmap</span>
+            <img id="cover-preview-img" class="cover-thumb" alt="Cover" />
+          </div>
+
+          <div class="asset-row">
+            <div>
+              <div><strong>Аудио:</strong> <span id="asset-audio-status" class="asset-status">Не загружено (синтезатор)</span></div>
+              <input type="text" id="chart-audio-file" value="track.ogg" style="margin-top:3px;font-size:11px;" title="Имя аудиофайла в chart.json" />
+            </div>
+            <label class="btn btn-sm">
+              🎵 Загрузить
+              <input type="file" id="input-audio-file" accept=".ogg,.mp3,.wav,.oggvorbisstr,.oggstr,audio/*" hidden />
+            </label>
+          </div>
+
+          <div class="asset-row">
+            <div>
+              <div><strong>Обложка:</strong> <span id="asset-cover-status" class="asset-status">Авто-генерация 512×512</span></div>
+              <input type="text" id="chart-cover-file" value="Cover.png" style="margin-top:3px;font-size:11px;" title="Имя файла обложки в chart.json" />
+            </div>
+            <label class="btn btn-sm">
+              🖼 Обложка
+              <input type="file" id="input-cover-file" accept="image/*,.ctex,.stex" hidden />
+            </label>
+          </div>
+
+          <div class="asset-row">
+            <div>
+              <div><strong>Фон:</strong> <span id="asset-bg-status" class="asset-status">Авто-генерация 1280×720</span></div>
+              <input type="text" id="chart-bg-file" value="bg.png" style="margin-top:3px;font-size:11px;" title="Имя фонового файла в chart.json" />
+            </div>
+            <label class="btn btn-sm">
+              🌌 Фон
+              <input type="file" id="input-bg-file" accept="image/*,.ctex,.stex" hidden />
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- центр -->
+    <section class="panel panel-preview">
+      <div class="panel-header">
+        <span>2. Живое превью арены Swipetava (все шейдеры и надписи)</span>
+        <div style="display:flex;gap:10px;">
+          <label class="chk-label"><input type="checkbox" id="check-hitsound" checked /> Хитсаунд</label>
+          <label class="chk-label"><input type="checkbox" id="check-metronome" /> Метроном</label>
+        </div>
+      </div>
+
+      <div class="preview-stage">
+        <div class="canvas-frame">
+          <canvas id="preview-canvas" width="768" height="432"></canvas>
+        </div>
+
+        <!-- Транспорт-панель -->
+        <div class="transport-bar">
+          <div class="transport-left">
+            <button type="button" class="btn btn-primary" id="btn-play-pause">▶ Пуск</button>
+            <button type="button" class="btn" id="btn-stop">⏹ Стоп</button>
+            <button type="button" class="btn btn-sm" id="btn-step-back" title="Шаг назад по сетке ([)">⏮ Шаг</button>
+            <button type="button" class="btn btn-sm" id="btn-step-fwd" title="Шаг вперёд по сетке (])">Шаг ⏭</button>
+            <span id="time-readout" class="time-readout">00:00.000 (0.000s) | Такт 1.1</span>
+          </div>
+
+          <div class="transport-right">
+            <label style="font-size:11px;color:var(--text-secondary);">Сетка:</label>
+            <select id="snap-select" style="width:86px;">
+              <option value="1">1/1 доли</option>
+              <option value="2">1/2 доли</option>
+              <option value="4" selected>1/4 доли</option>
+              <option value="8">1/8 доли</option>
+              <option value="16">1/16 доли</option>
+              <option value="0">Свободно</option>
+            </select>
+
+            <label style="font-size:11px;color:var(--text-secondary);">Скорость:</label>
+            <select id="playback-rate-select" style="width:72px;">
+              <option value="0.5">0.5x</option>
+              <option value="0.75">0.75x</option>
+              <option value="1" selected>1.0x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+            </select>
+          </div>
+        </div>
+
+                <!-- Сенсорный Свайп-Пад для телефонов и планшетов -->
+        <div class="section-box" style="width:100%;">
+          <div class="section-title">
+            <span>📱 Сенсорный Свайп-Пад (ставь ноты свайпом пальца)</span>
+            <label class="chk-label" title="После каждого свайпа автоматически сдвигать курсор на 1 шаг сетки вперёд">
+              <input type="checkbox" id="check-swipe-autoadvance" checked /> Авто-шаг по сетке
+            </label>
+          </div>
+          <div id="touch-swipe-pad" class="touch-swipe-pad">
+            <div class="swipe-sector" data-swipe-sector="UP_LEFT"><span class="sec-arrow">↖</span><span>UP_LEFT</span></div>
+            <div class="swipe-sector" data-swipe-sector="UP"><span class="sec-arrow">↑</span><span>UP</span></div>
+            <div class="swipe-sector" data-swipe-sector="UP_RIGHT"><span class="sec-arrow">↗</span><span>UP_RIGHT</span></div>
+            <div class="swipe-sector" data-swipe-sector="LEFT"><span class="sec-arrow">←</span><span>LEFT</span></div>
+            <div class="swipe-center-hub">
+              <span id="touch-swipe-status">Свайпни пальцем в любую из 8 сторон</span>
+            </div>
+            <div class="swipe-sector" data-swipe-sector="RIGHT"><span class="sec-arrow">→</span><span>RIGHT</span></div>
+            <div class="swipe-sector" data-swipe-sector="DOWN_LEFT"><span class="sec-arrow">↙</span><span>DOWN_LEFT</span></div>
+            <div class="swipe-sector" data-swipe-sector="DOWN"><span class="sec-arrow">↓</span><span>DOWN</span></div>
+            <div class="swipe-sector" data-swipe-sector="DOWN_RIGHT"><span class="sec-arrow">↘</span><span>DOWN_RIGHT</span></div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:space-between;margin-top:4px;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button type="button" class="btn btn-sm" id="btn-touch-rev">↺ REVERSE</button>
+              <button type="button" class="btn btn-sm" id="btn-touch-rev-back">↻ REVERSE_BACK</button>
+            </div>
+            <button type="button" class="btn btn-sm btn-danger" id="btn-touch-del">⌫ Удалить ноту на курсоре</button>
+          </div>
+        </div>
+
+        <!-- Инспектор выбранной ноты или ивента -->
+        <div class="section-box" style="width:100%;">
+          <div class="section-title">
+            <span>Инспектор выбранного элемента</span>
+            <div style="display:flex;gap:6px;">
+              <button type="button" class="btn btn-sm" id="btn-mirror-h" title="Отзеркалить все ноты по горизонтали">⇄ Зеркало Г</button>
+              <button type="button" class="btn btn-sm" id="btn-mirror-v" title="Отзеркалить все ноты по вертикали">⇅ Зеркало В</button>
+              <button type="button" class="btn btn-sm btn-danger" id="btn-clear-notes">Очистить ноты</button>
+            </div>
+          </div>
+          <div id="inspector-content">
+            <div class="empty-hint">Кликни по ноте или событию на таймлайне для тонкой правки (ПКМ или Delete — удалить).</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ПРАВАЯ КОЛОНКА: НОТЫ, ЭФФЕКТЫ, СКОРОСТЬ СКРОЛЛА И НАДПИСИ ВМЕСТО КОМБО -->
+    <section class="panel panel-fx">
+      <div class="panel-header">
+        <span>3. Ноты, скорость, эффекты и надписи</span>
+      </div>
+      <div class="panel-body">
+
+        <!-- палитра нот -->
+        <div class="section-box">
+          <div class="section-title">
+            <span>Палитра нот (8 свайпов + реверс)</span>
+            <label class="chk-label" title="Сразу ставить ноту при клике по кнопке направления">
+              <input type="checkbox" id="note-click-places-check" checked /> Ставить кликом
+            </label>
+          </div>
+          <div id="note-pad-grid" class="note-pad-grid"></div>
+          <div id="note-extra-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;"></div>
+          <label class="chk-label" style="margin-top:2px;">
+            <input type="checkbox" id="reverse-autoflow-check" checked />
+            Авто-привязка <code>REVERSE → NOTES_FLOW_LEFT</code> и <code>REVERSE_BACK → NOTES_FLOW_RIGHT</code>
+          </label>
+        </div>
+
+        <!-- смена скорости прокрутки -->
+        <div class="section-box">
+          <div class="section-title">
+            <span>Динамическая скорость скролла (NOTE_SPEED)</span>
+          </div>
+          <div class="quick-pills">
+            <button type="button" class="btn btn-sm" data-quick-speed="0.5">0.5x</button>
+            <button type="button" class="btn btn-sm" data-quick-speed="0.75">0.75x</button>
+            <button type="button" class="btn btn-sm" data-quick-speed="1">1.0x (Сброс)</button>
+            <button type="button" class="btn btn-sm" data-quick-speed="1.25">1.25x</button>
+            <button type="button" class="btn btn-sm" data-quick-speed="1.5">1.5x</button>
+            <button type="button" class="btn btn-sm" data-quick-speed="2">2.0x</button>
+            <button type="button" class="btn btn-sm" data-quick-speed="2.5">2.5x</button>
+          </div>
+        </div>
+
+        <!-- редактор событий -->
+        <div class="section-box">
+          <div class="section-title">
+            <span>Добавить событие / шейдер / надпись</span>
+          </div>
+
+          <div class="field-row">
+            <label for="event-type-select">Тип ивента</label>
+            <select id="event-type-select"></select>
+          </div>
+          <div id="event-type-desc" style="font-size:11px;color:var(--text-muted);"></div>
+
+          <div class="field-row" id="field-ev-duration">
+            <label for="event-duration-input">Длительность (с)</label>
+            <input type="number" id="event-duration-input" step="0.05" min="0.05" value="0.5" />
+          </div>
+
+          <div class="field-row" id="field-ev-speed" style="display:none;">
+            <label for="event-speed-input">Множитель speed</label>
+            <input type="number" id="event-speed-input" step="0.05" min="0.1" max="5" value="1.5" />
+          </div>
+
+          <div class="field-row" id="field-ev-text">
+            <label for="event-text-input">Текст надписи</label>
+            <input type="text" id="event-text-input" placeholder="Надпись" value="HI!" />
+          </div>
+
+          <div class="field-row" id="field-ev-color">
+            <label for="event-color-input">Цвет надписи</label>
+            <input type="color" id="event-color-input" value="#ffffff" />
+          </div>
+
+          <div class="field-row" id="field-ev-pair" style="display:none;">
+            <label class="chk-label">
+              <input type="checkbox" id="event-autopair-check" checked />
+              Авто-выключение через (с):
+            </label>
+            <input type="number" id="event-pair-dur-input" step="0.25" min="0.1" value="4.0" style="width:80px;" />
+          </div>
+
+          <button type="button" class="btn btn-primary" id="btn-add-event">
+            ⚡ Поставить событие на курсор
+          </button>
+
+          <!-- Быстрые кнопки шейдеров FX_* -->
+          <div style="margin-top:4px;font-size:11px;color:var(--text-secondary);">Быстрый штамп эффекта на курсор:</div>
+          <div class="quick-pills">
+            <button type="button" class="btn btn-sm" data-quick-fx="FLASH">FLASH</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="SHAKE">SHAKE</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="BLACKOUT">BLACKOUT</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_GLITCH">GLITCH</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_INVERT">INVERT</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_BW">BW</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_DUOTONE">DUOTONE</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_HALFTONE">HALFTONE</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_OLD_TV">OLD_TV</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_POSTERIZE">POSTERIZE</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_WAVE">WAVE</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_ZOOM_BLUR">ZOOM_BLUR</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="HUD_HIDE">HUD_HIDE</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="HUD_SHOW">HUD_SHOW</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="DISCO">DISCO</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="BG_COLOR">BG_COLOR</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_PIXELATE">PIXELATE</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_RGB_SPLIT">RGB_SPLIT</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_AQUA">AQUA</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_ENDING">ENDING</button>
+          </div>
+        </div>
+
+        <!-- генератор надписей -->
+        <div class="section-box">
+          <div class="section-title">
+            <span>Генератор надписей по долям</span>
+          </div>
+          <div style="font-size:11px;color:var(--text-secondary);">
+            Разбивает строку по словам или через <code>|</code> и расставляет серию ивентов <code>TEXT</code> вместо комбо-счётчика строго в бит начиная с курсора:
+          </div>
+          <input type="text" id="hitech-phrase-input" value="READY? | 3 | 2 | 1 | HERE WE GO!" placeholder="Слова через пробел или |" />
+          <div class="field-row">
+            <label for="hitech-phrase-step">Шаг между словами</label>
+            <select id="hitech-phrase-step" style="width:120px;">
+              <option value="0.5">1/2 доли (быстро)</option>
+              <option value="1" selected>1 доля (в бит)</option>
+              <option value="2">2 доли</option>
+              <option value="4">1 такт (4 доли)</option>
+            </select>
+            <input type="color" id="hitech-phrase-color" value="#38bdf8" title="Цвет серии надписей" />
+          </div>
+          <label class="chk-label" style="margin:2px 0;">
+            <input type="checkbox" id="hitech-auto-hud-check" checked />
+            Автоматически прятать комбо (<code>HUD_HIDE</code> перед фразой и <code>HUD_SHOW</code> после, как в Hi-Tech)
+          </label>
+          <button type="button" class="btn" id="btn-insert-hitech-phrases">
+            💬 Разложить фразу по битам
+          </button>
+        </div>
+
+        <!-- события на карте -->
+        <div class="section-box">
+          <div class="section-title">
+            <span>Список событий на карте</span>
+            <select id="event-list-filter" style="width:130px;padding:2px 4px;font-size:11px;">
+              <option value="ALL">Все события</option>
+              <option value="TEXT">Только TEXT</option>
+              <option value="NOTE_SPEED">Только NOTE_SPEED</option>
+              <option value="FLOW_CAM">Дорожка и камера</option>
+              <option value="FX">Только шейдеры FX_*</option>
+            </select>
+          </div>
+          <div style="max-height:150px;overflow-y:auto;">
+            <table class="compact-table">
+              <thead>
+                <tr>
+                  <th>Время</th>
+                  <th>Тип</th>
+                  <th>Параметры</th>
+                </tr>
+              </thead>
+              <tbody id="events-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- НИЖНИЙ ДОК ТАЙМЛАЙНА -->
+  <footer class="timeline-dock">
+    <div class="timeline-toolbar">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <strong style="font-size:12px;color:var(--accent-2);text-transform:uppercase;">Многодорожечный таймлайн</strong>
+        <span style="font-size:11px;color:var(--text-secondary);">
+          Двойной клик по дорожке — поставить ноту/эффект · Перетаскивание мышью — сдвиг времени · ПКМ / Delete — удалить · Колесо — прокрутка (Ctrl+колесо — зум)
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div class="touch-mode-group" title="Режим касания пальцем по таймлайну на телефонах">
+          <button type="button" class="touch-mode-btn active" data-touch-mode="scroll">🖐 Скролл / Курсор</button>
+          <button type="button" class="touch-mode-btn" data-touch-mode="draw">✏ Карандаш (Ноты/FX)</button>
+          <button type="button" class="touch-mode-btn" data-touch-mode="erase">🧹 Ластик</button>
+        </div>
+        <label for="zoom-range"  style="font-size:11px;color:var(--text-secondary);">Масштаб:</label>
+        <input type="range" id="zoom-range" min="40" max="600" value="180" style="width:130px;" />
+      </div>
+    </div>
+
+    <div id="timeline-wrap" class="timeline-wrap">
+      <canvas id="timeline-canvas" width="1280" height="256"></canvas>
+    </div>
+
+    <div class="status-footer">
+      <span id="status-text">Готов к работе.</span>
+      <span>Горячие клавиши: <code>Space</code> Пуск/Пауза · <code>WASD / Стрелки / Q E Z C</code> 8 направлений нот · <code>R / F</code> Реверс-ноты · <code>[ / ]</code> Шаг по сетке · <code>Ctrl+Z / Ctrl+Y</code> Отмена</span>
+    </div>
+  </footer>
+
+
+  <!-- huh? -->
+  <div class="cubeface-modal-backdrop" id="cubeface-modal" hidden>
+    <div class="cubeface-modal-card" role="dialog" aria-modal="true">
+      <button type="button" class="cubeface-modal-close" id="btn-close-cubeface-modal" title="Закрыть">✕</button>
+
+      <button type="button" class="cubeface-btn" id="btn-cubeface" title="Нажми">
+        <img id="cubeface-img" src="./cubeface.png" alt="cubeface" />
+      </button>
+
+      <!-- текст для секретной штуки -->
+      <div class="vibecode-note" id="vibecode-note">
+        <strong>Поздравляю! Вы открыли "робоп кликер 2027 бесплатно"!</strong><br />
+        В этот код было вложено дохуя времени, токенов и денег. Навайбкодил чисто для того, чтобы был редактор под руку. На момент написания данного текста, исходный код Swipetava всё ещё не выложен. Посвящается "лучшему кодеру Швеции" по мнению самого кодера. Made by Claude Code, GPT Codex, Google Gemini и наверное ещё где-то десяток моделей, про которых я не в курсе. Sponsored by lawx.
+      </div>
+    </div>
+  </div>
+
+  <!-- кредиты кредитная карта -->
+  <footer class="credits-footer" id="credits-footer">
+    <div class="credits-grid">
+      <div class="credits-card">
+        <div class="credits-card-title">Кто делал</div>
+        <div class="credits-card-body">
+          Идея, сборка и адаптация: <strong>awsombreaker123</strong><br />
+          Оригинальная игра <strong>Swipetava</strong>: Antonballls &amp; [SWC]rew
+        </div>
+      </div>
+
+      <div class="credits-card">
+        <div class="credits-card-title">Что было использовано</div>
+        <div class="credits-card-body">
+          HTML5 Canvas 2D, Web Audio API, встроенный упаковщик ZIP/Deflate (<code>.swmap</code>), конвертер ресурсов Godot 4 (<code>.ctex</code> / <code>.oggvorbisstr</code>), карты из официального плейлиста <em>Swipetava OST</em>.
+        </div>
+      </div>
+    </div>
+
+    <!-- значок лицензии -->
+    <div class="wtfpl-box">
+      <a href="http://www.wtfpl.net/" target="_blank" rel="noopener noreferrer" title="Do What The Fuck You Want To Public License">
+        <img
+          src="./wtfpl.svg"
+          alt="WTFPL"
+          class="wtfpl-badge-img"
+        />
+      </a>
+      <span>Распространяется под лицензией <a href="http://www.wtfpl.net/" target="_blank" rel="noopener noreferrer" style="padding:0;border:none;background:none;color:var(--accent-2);text-decoration:underline;">WTFPL</a></span>
+    </div>
+  </footer>
+
+  <script src="./swmap-zip.js"></script>
+  <script src="./editor.js"></script>
+</body>
+</html>
