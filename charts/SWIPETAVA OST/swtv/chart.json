@@ -1,0 +1,439 @@
+{
+  "bpm": 90,
+  "noteTravelTime": 1000,
+  "gridOffset": 0.033,
+  "timing": [
+    {
+      "time": 0.033,
+      "bpm": 90
+    }
+  ],
+  "notes": [
+    {
+      "time": 0.033,
+      "type": "RIGHT"
+    },
+    {
+      "time": 3.589,
+      "type": "UP"
+    },
+    {
+      "time": 7.144,
+      "type": "LEFT"
+    },
+    {
+      "time": 10.7,
+      "type": "DOWN"
+    },
+    {
+      "time": 14.255,
+      "type": "UP"
+    },
+    {
+      "time": 16.033,
+      "type": "DOWN"
+    },
+    {
+      "time": 17.811,
+      "type": "UP"
+    },
+    {
+      "time": 19.589,
+      "type": "RIGHT"
+    },
+    {
+      "time": 21.366,
+      "type": "DOWN"
+    },
+    {
+      "time": 22.255,
+      "type": "UP"
+    },
+    {
+      "time": 23.144,
+      "type": "DOWN"
+    },
+    {
+      "time": 24.033,
+      "type": "UP"
+    },
+    {
+      "time": 24.922,
+      "type": "DOWN"
+    },
+    {
+      "time": 25.366,
+      "type": "UP"
+    },
+    {
+      "time": 25.811,
+      "type": "DOWN"
+    },
+    {
+      "time": 26.255,
+      "type": "UP"
+    },
+    {
+      "time": 26.7,
+      "type": "DOWN"
+    },
+    {
+      "time": 27.033,
+      "type": "UP"
+    },
+    {
+      "time": 27.366,
+      "type": "DOWN"
+    },
+    {
+      "time": 27.699,
+      "type": "UP"
+    },
+    {
+      "time": 28.033,
+      "type": "DOWN"
+    },
+    {
+      "time": 30.255,
+      "type": "UP"
+    },
+    {
+      "time": 30.7,
+      "type": "RIGHT"
+    },
+    {
+      "time": 31.144,
+      "type": "UP"
+    },
+    {
+      "time": 31.589,
+      "type": "LEFT"
+    },
+    {
+      "time": 32.033,
+      "type": "DOWN"
+    },
+    {
+      "time": 32.477,
+      "type": "UP"
+    },
+    {
+      "time": 32.922,
+      "type": "RIGHT"
+    },
+    {
+      "time": 33.366,
+      "type": "UP"
+    },
+    {
+      "time": 33.811,
+      "type": "DOWN"
+    },
+    {
+      "time": 34.255,
+      "type": "LEFT"
+    },
+    {
+      "time": 34.7,
+      "type": "UP"
+    },
+    {
+      "time": 35.144,
+      "type": "RIGHT"
+    },
+    {
+      "time": 35.589,
+      "type": "DOWN"
+    },
+    {
+      "time": 36.033,
+      "type": "UP"
+    },
+    {
+      "time": 36.477,
+      "type": "RIGHT"
+    },
+    {
+      "time": 36.922,
+      "type": "LEFT"
+    },
+    {
+      "time": 37.366,
+      "type": "UP"
+    },
+    {
+      "time": 37.811,
+      "type": "RIGHT"
+    },
+    {
+      "time": 38.255,
+      "type": "UP"
+    },
+    {
+      "time": 38.7,
+      "type": "LEFT"
+    },
+    {
+      "time": 39.144,
+      "type": "DOWN"
+    },
+    {
+      "time": 39.588,
+      "type": "UP"
+    },
+    {
+      "time": 40.033,
+      "type": "RIGHT"
+    },
+    {
+      "time": 40.477,
+      "type": "UP"
+    },
+    {
+      "time": 40.922,
+      "type": "DOWN"
+    },
+    {
+      "time": 41.366,
+      "type": "LEFT"
+    },
+    {
+      "time": 41.811,
+      "type": "UP"
+    },
+    {
+      "time": 42.255,
+      "type": "RIGHT"
+    },
+    {
+      "time": 42.7,
+      "type": "DOWN"
+    },
+    {
+      "time": 43.144,
+      "type": "UP"
+    },
+    {
+      "time": 43.588,
+      "type": "RIGHT"
+    },
+    {
+      "time": 44.033,
+      "type": "LEFT"
+    },
+    {
+      "time": 44.477,
+      "type": "REVERSE"
+    },
+    {
+      "time": 44.922,
+      "type": "LEFT"
+    },
+    {
+      "time": 45.366,
+      "type": "DOWN"
+    },
+    {
+      "time": 45.811,
+      "type": "RIGHT"
+    },
+    {
+      "time": 46.255,
+      "type": "UP"
+    },
+    {
+      "time": 46.7,
+      "type": "DOWN"
+    },
+    {
+      "time": 47.144,
+      "type": "LEFT"
+    },
+    {
+      "time": 47.589,
+      "type": "DOWN"
+    },
+    {
+      "time": 48.033,
+      "type": "UP"
+    },
+    {
+      "time": 48.477,
+      "type": "RIGHT"
+    },
+    {
+      "time": 48.922,
+      "type": "DOWN"
+    },
+    {
+      "time": 49.366,
+      "type": "LEFT"
+    },
+    {
+      "time": 49.811,
+      "type": "UP"
+    },
+    {
+      "time": 50.255,
+      "type": "DOWN"
+    },
+    {
+      "time": 50.7,
+      "type": "LEFT"
+    },
+    {
+      "time": 51.144,
+      "type": "RIGHT"
+    },
+    {
+      "time": 51.589,
+      "type": "DOWN"
+    },
+    {
+      "time": 52.033,
+      "type": "LEFT"
+    },
+    {
+      "time": 52.477,
+      "type": "DOWN"
+    },
+    {
+      "time": 52.922,
+      "type": "RIGHT"
+    },
+    {
+      "time": 53.366,
+      "type": "UP"
+    },
+    {
+      "time": 53.811,
+      "type": "DOWN"
+    },
+    {
+      "time": 54.255,
+      "type": "LEFT"
+    },
+    {
+      "time": 54.7,
+      "type": "DOWN"
+    },
+    {
+      "time": 55.144,
+      "type": "UP"
+    },
+    {
+      "time": 55.589,
+      "type": "RIGHT"
+    },
+    {
+      "time": 56.033,
+      "type": "DOWN"
+    },
+    {
+      "time": 56.477,
+      "type": "LEFT"
+    },
+    {
+      "time": 56.922,
+      "type": "UP"
+    },
+    {
+      "time": 57.366,
+      "type": "DOWN"
+    },
+    {
+      "time": 57.811,
+      "type": "LEFT"
+    },
+    {
+      "time": 58.255,
+      "type": "RIGHT"
+    }
+  ],
+  "events": [
+    {
+      "time": 0.033,
+      "type": "BG_COLOR",
+      "color": "#00031a"
+    },
+    {
+      "time": 1.144,
+      "type": "BG_COLOR",
+      "duration": 29.111,
+      "color": "#62a0ea"
+    },
+    {
+      "time": 28.144,
+      "type": "BLACKOUT",
+      "duration": 1.889
+    },
+    {
+      "time": 30.255,
+      "type": "CAMERA_BOB_ON"
+    },
+    {
+      "time": 30.255,
+      "type": "FLASH"
+    },
+    {
+      "time": 30.258,
+      "type": "FX_AQUA",
+      "duration": 27.525
+    },
+    {
+      "time": 36.477,
+      "type": "FLASH"
+    },
+    {
+      "time": 36.922,
+      "type": "FLASH"
+    },
+    {
+      "time": 37.366,
+      "type": "FLASH"
+    },
+    {
+      "time": 43.589,
+      "type": "FLASH"
+    },
+    {
+      "time": 44.033,
+      "type": "FLASH"
+    },
+    {
+      "time": 44.477,
+      "type": "NOTES_FLOW_RIGHT"
+    },
+    {
+      "time": 44.477,
+      "type": "FLASH"
+    },
+    {
+      "time": 50.7,
+      "type": "FLASH"
+    },
+    {
+      "time": 51.144,
+      "type": "FLASH"
+    },
+    {
+      "time": 51.589,
+      "type": "FLASH"
+    },
+    {
+      "time": 57.783,
+      "type": "FLASH"
+    },
+    {
+      "time": 58.255,
+      "type": "FLASH"
+    },
+    {
+      "time": 58.7,
+      "type": "BLACKOUT",
+      "duration": 5.336
+    }
+  ],
+  "audioFile": "track.mp3",
+  "audioFormat": "mp3"
+}

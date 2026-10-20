@@ -933,6 +933,174 @@
       display: block;
     }
 
+  
+    /* --- Вкладочный интерфейс (мобильный по умолчанию + переключатель на ПК) --- */
+    .app-tabs-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 14px;
+      background: var(--bg-1);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .app-tabs-bar::-webkit-scrollbar { display: none; }
+
+    .app-tabs-pills {
+      display: inline-flex;
+      gap: 4px;
+      background: var(--bg-0);
+      padding: 4px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+    }
+
+    .app-tab-btn {
+      padding: 6px 13px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 999px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s, transform 0.1s;
+    }
+
+    .app-tab-btn.active {
+      background: linear-gradient(135deg, var(--accent), #6366f1);
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(168, 85, 247, 0.35);
+    }
+
+    /* В режиме вкладок (или на экранах <= 980px) показываем только активную вкладку */
+    body[data-layout-mode="tabs"] .workspace-grid {
+      display: block;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 10px;
+    }
+
+    body[data-layout-mode="tabs"] .workspace-grid > .panel {
+      display: none;
+      margin-bottom: 10px;
+    }
+
+    body[data-layout-mode="tabs"][data-active-tab="preview"] .panel-preview,
+    body[data-layout-mode="tabs"][data-active-tab="notes"] .panel-notes-tab,
+    body[data-layout-mode="tabs"][data-active-tab="events"] .panel-fx,
+    body[data-layout-mode="tabs"][data-active-tab="stats"] .panel-stats,
+    body[data-layout-mode="tabs"][data-active-tab="map"] .panel-meta {
+      display: flex;
+    }
+
+    /* В режиме плиток (ПК) показываем 3 основные колонки и панель статистики внизу сетки */
+    body[data-layout-mode="tiles"] .workspace-grid {
+      display: grid;
+      grid-template-columns: 330px minmax(420px, 1fr) 360px;
+      gap: 10px;
+      padding: 10px;
+      align-items: start;
+    }
+
+    body[data-layout-mode="tiles"] .panel-stats {
+      grid-column: 1 / -1;
+    }
+
+    body[data-layout-mode="tiles"] .panel-notes-tab {
+      display: none;
+    }
+
+    /* На мобильных экранах принудительно удобный вкладочный интерфейс */
+    @media (max-width: 980px) {
+      .workspace-grid {
+        display: block !important;
+        padding: 6px !important;
+      }
+      .workspace-grid > .panel {
+        display: none !important;
+        max-height: none !important;
+      }
+      body[data-active-tab="preview"] .panel-preview,
+      body[data-active-tab="notes"] .panel-notes-tab,
+      body[data-active-tab="events"] .panel-fx,
+      body[data-active-tab="stats"] .panel-stats,
+      body[data-active-tab="map"] .panel-meta {
+        display: flex !important;
+      }
+      .timeline-dock {
+        position: relative !important;
+        padding: 6px 8px 10px !important;
+      }
+    }
+
+    /* Карточки статистики NPS и сложности */
+    .nps-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+      gap: 8px;
+    }
+
+    .nps-kpi-card {
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .nps-kpi-label {
+      font-size: 10px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .nps-kpi-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .nps-kpi-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .nps-chart-wrap {
+      width: 100%;
+      background: #090d18;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    #nps-chart-canvas {
+      width: 100%;
+      height: 110px;
+      display: block;
+      cursor: pointer;
+    }
+
+    .rec-btn-active {
+      background: var(--danger) !important;
+      border-color: #fda4af !important;
+      color: #fff !important;
+      animation: recPulse 1s infinite alternate;
+    }
+
+    @keyframes recPulse {
+      from { box-shadow: 0 0 0px rgba(244, 63, 94, 0.4); }
+      to { box-shadow: 0 0 12px rgba(244, 63, 94, 0.9); }
+    }
+
   </style>
 </head>
 <body>
@@ -950,6 +1118,9 @@
     <div class="stats-bar">
       <span>Нот: <strong id="stat-notes-count">0</strong></span>
       <span>Событий: <strong id="stat-events-count">0</strong></span>
+      <span>Ср. NPS: <strong id="stat-avg-nps">0.00</strong></span>
+      <span>Пик 1с: <strong id="stat-peak-nps">0</strong></span>
+      <span title="Объективная сложность чарта в баллах (без лимита)">Сложность: <strong id="stat-sdp-points" style="color:#facc15;">0 pts</strong> (<strong id="stat-auto-stars" style="color:#38bdf8;">0.0★</strong>)</span>
     </div>
 
     <div class="toolbar-actions">
@@ -971,6 +1142,22 @@
     </div>
   </header>
 
+  <!-- Панель вкладок (основная навигация на телефонах + переключатель Вкладки / Плитки для ПК) -->
+  <nav class="app-tabs-bar" aria-label="Разделы редактора">
+    <div class="app-tabs-pills" id="app-tabs-pills">
+      <button type="button" class="app-tab-btn active" data-app-tab="preview">🎬 Превью</button>
+      <button type="button" class="app-tab-btn" data-app-tab="notes">🎹 Смещение</button>
+      <button type="button" class="app-tab-btn" data-app-tab="events">✨ События и FX (36)</button>
+      <button type="button" class="app-tab-btn" data-app-tab="stats">📊 Статистика</button>
+      <button type="button" class="app-tab-btn" data-app-tab="map">🎵 Информация</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+      <button type="button" class="btn btn-sm" id="btn-validate-chart" title="Проверить карту на ошибки перед сохранением">🔍 Проверить карту</button>
+      <button type="button" class="btn btn-sm" id="btn-toggle-layout-mode" title="Переключить раскладку: Вкладки (мобильная) / Плитки (ПК)">🖥 Режим: Плитки / Вкладки</button>
+    </div>
+  </nav>
+  <div id="chart-validator-output" style="display:none;margin:6px 14px 0;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-2);font-size:12px;line-height:1.45;"></div>
+
   <!-- рабочая область -->
   <main class="workspace-grid">
 
@@ -981,38 +1168,26 @@
       </div>
       <div class="panel-body">
 
-                <!-- Встроенная библиотека всех 11 официальных карт Swipetava OST -->
+        <!-- Встроенная библиотека всех 3 официальных плейлистов (24 карты с обложками и песнями) -->
         <div class="section-box">
           <div class="section-title">
-            <span>🎵 Официальные карты</span>
+            <span>🎵 Официальный саундтрек (24 карты)</span>
           </div>
           <div style="font-size:11px;color:var(--text-secondary);">
-            Выбери любую карту из альбома <code>Swipetava OST</code>, чтобы посмотреть её тайминги и эффекты или взять за основу:
+            Все 3 плейлиста из игры: <code>Swipetava OST</code> (11), <code>RCGD VERS OST Vol. 1</code> (6) и <code>RCGD VERSE, Vol. 2</code> (7) с чартами, обложками и автоподгрузкой песен:
           </div>
-          <div style="display:flex;gap:6px;align-items:center;">
+          <div class="field-row">
+            <label for="select-playlist-group">Плейлист</label>
+            <select id="select-playlist-group" style="flex:1;"></select>
+          </div>
+          <div class="field-row">
+            <label for="select-ost-preset">Трек / Карта</label>
             <select id="select-ost-preset" style="flex:1;"></select>
-            <button type="button" class="btn btn-primary btn-sm" id="btn-load-ost-preset">Открыть</button>
           </div>
-        </div>
-
-        <!-- конвертер -->
-        <div class="section-box">
-          <div class="section-title">
-            <span>🔧 Конвертер Godot 4 (.ctex / .oggvorbisstr)</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-load-ost-preset" style="flex:1;">📂 Открыть в редакторе</button>
+            <button type="button" class="btn btn-sm" id="btn-export-selected-ost" title="Сразу собрать и скачать выбранную официальную карту как .swmap">📥 Скачать .swmap</button>
           </div>
-          <div style="font-size:11px;color:var(--text-secondary);">
-            Вытащил файлы из APKшника? Закинь сюда <code>.ctex</code> или <code>.oggvorbisstr</code> — редактор прямо в браузере перегонит их в чистые <code>.png</code> и <code>.ogg</code> и скачает обратно:
-          </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-            <label class="btn btn-sm btn-primary">
-              ⚡ Выбрать .ctex / .oggvorbisstr
-              <input type="file" id="input-godot-converter" accept=".ctex,.stex,.oggvorbisstr,.oggstr" multiple hidden />
-            </label>
-            <label class="chk-label" title="Сразу подставить сконвертированный трек или обложку в открытую карту">
-              <input type="checkbox" id="check-godot-apply-map" checked /> Сразу вставить в карту
-            </label>
-          </div>
-          <div id="godot-converter-status" style="font-size:11px;color:var(--accent-2);"></div>
         </div>
 
         <!-- meta.json -->
@@ -1045,7 +1220,10 @@
         <div class="section-box">
           <div class="section-title">
             <span>Тайминг и базовая скорость скролла</span>
-            <button type="button" class="btn btn-sm" id="btn-tap-tempo" title="Нажимай в ритм для определения BPM">🥁 Tap BPM</button>
+            <div style="display:flex;gap:4px;">
+              <button type="button" class="btn btn-sm" id="btn-auto-bpm" title="Автоматически определить BPM и сдвиг сетки (gridOffset) по загруженному аудио">⚡ Авто BPM</button>
+              <button type="button" class="btn btn-sm" id="btn-tap-tempo" title="Нажимай в ритм для определения BPM">🥁 Tap BPM</button>
+            </div>
           </div>
           <div class="field-grid-2">
             <div>
@@ -1152,30 +1330,37 @@
           <div class="transport-left">
             <button type="button" class="btn btn-primary" id="btn-play-pause">▶ Пуск</button>
             <button type="button" class="btn" id="btn-stop">⏹ Стоп</button>
-            <button type="button" class="btn btn-sm" id="btn-step-back" title="Шаг назад по сетке ([)">⏮ Шаг</button>
-            <button type="button" class="btn btn-sm" id="btn-step-fwd" title="Шаг вперёд по сетке (])">Шаг ⏭</button>
+            <button type="button" class="btn btn-sm" id="btn-rec-mode" title="Режим живой записи (свайпы и клавиши ставят ноты на лету под музыку)">🔴 Запись</button>
+            <button type="button" class="btn btn-sm" id="btn-step-back" title="Шаг назад по сетке ([)">⏮</button>
+            <button type="button" class="btn btn-sm" id="btn-step-fwd" title="Шаг вперёд по сетке (])">⏭</button>
             <span id="time-readout" class="time-readout">00:00.000 (0.000s) | Такт 1.1</span>
           </div>
 
           <div class="transport-right">
-            <label style="font-size:11px;color:var(--text-secondary);">Сетка:</label>
-            <select id="snap-select" style="width:86px;">
+            <label style="font-size:11px;color:var(--text-secondary);">Привязка:</label>
+            <select id="snap-select" style="width:118px;">
               <option value="1">1/1 доли</option>
               <option value="2">1/2 доли</option>
               <option value="4" selected>1/4 доли</option>
               <option value="8">1/8 доли</option>
               <option value="16">1/16 доли</option>
+              <option value="-1">⚡ Пик волны (Onset)</option>
+              <option value="-2">🧲 Сетка + Пик</option>
               <option value="0">Свободно</option>
             </select>
 
             <label style="font-size:11px;color:var(--text-secondary);">Скорость:</label>
-            <select id="playback-rate-select" style="width:72px;">
+            <select id="playback-rate-select" style="width:72px;" title="Пресет скорости воспроизведения">
+              <option value="0.25">0.25x</option>
               <option value="0.5">0.5x</option>
               <option value="0.75">0.75x</option>
               <option value="1" selected>1.0x</option>
               <option value="1.25">1.25x</option>
               <option value="1.5">1.5x</option>
+              <option value="2">2.0x</option>
+              <option value="custom">Своя…</option>
             </select>
+            <input type="number" id="custom-playback-rate" min="0.1" max="4.0" step="0.05" value="1.0" style="width:58px;" title="Кастомная скорость воспроизведения (0.10x – 4.00x)" />
           </div>
         </div>
 
@@ -1234,22 +1419,36 @@
       <div class="panel-body">
 
         <!-- палитра нот -->
-        <div class="section-box">
+        <div class="section-box" id="note-palette-box">
           <div class="section-title">
             <span>Палитра нот (8 свайпов + реверс)</span>
-            <label class="chk-label" title="Сразу ставить ноту при клике по кнопке направления">
-              <input type="checkbox" id="note-click-places-check" checked /> Ставить кликом
-            </label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <label class="chk-label" title="Наслаивать ноты разных направлений в один вертикальный стак на одном таймкоде">
+                <input type="checkbox" id="note-stack-mode-check" checked /> 📚 Режим стака
+              </label>
+              <label class="chk-label" title="Сразу ставить ноту при клике по кнопке направления">
+                <input type="checkbox" id="note-click-places-check" checked /> Ставить кликом
+              </label>
+            </div>
           </div>
           <div id="note-pad-grid" class="note-pad-grid"></div>
           <div id="note-extra-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-top:4px;">
+            <span style="font-size:11px;color:var(--text-secondary);">Микро-сдвиг ноты:</span>
+            <div style="display:flex;gap:4px;">
+              <button type="button" class="btn btn-sm" data-nudge-ms="-10">-10мс</button>
+              <button type="button" class="btn btn-sm" data-nudge-ms="-1">-1мс</button>
+              <button type="button" class="btn btn-sm" data-nudge-ms="1">+1мс</button>
+              <button type="button" class="btn btn-sm" data-nudge-ms="10">+10мс</button>
+            </div>
+          </div>
           <label class="chk-label" style="margin-top:2px;">
             <input type="checkbox" id="reverse-autoflow-check" checked />
-            Авто-привязка <code>REVERSE → NOTES_FLOW_LEFT</code> и <code>REVERSE_BACK → NOTES_FLOW_RIGHT</code>
+            Авто-синхронизация <code>REVERSE → NOTES_FLOW_RIGHT</code> и <code>REVERSE_BACK → NOTES_FLOW_LEFT</code> (с защитой 1-й секунды)
           </label>
         </div>
 
-        <!-- смена скорости прокрутки -->
+        <!-- смена скорости прокрутки (с кастомным значением) -->
         <div class="section-box">
           <div class="section-title">
             <span>Динамическая скорость скролла (NOTE_SPEED)</span>
@@ -1262,6 +1461,13 @@
             <button type="button" class="btn btn-sm" data-quick-speed="1.5">1.5x</button>
             <button type="button" class="btn btn-sm" data-quick-speed="2">2.0x</button>
             <button type="button" class="btn btn-sm" data-quick-speed="2.5">2.5x</button>
+          </div>
+          <div class="field-row" style="margin-top:6px;">
+            <label for="custom-note-speed-input">Свой множитель NOTE_SPEED:</label>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <input type="number" id="custom-note-speed-input" min="0.1" max="10.0" step="0.05" value="1.35" style="width:78px;" />
+              <button type="button" class="btn btn-sm btn-primary" id="btn-apply-custom-note-speed">Поставить на курсор</button>
+            </div>
           </div>
         </div>
 
@@ -1331,6 +1537,8 @@
             <button type="button" class="btn btn-sm" data-quick-fx="FX_PIXELATE">PIXELATE</button>
             <button type="button" class="btn btn-sm" data-quick-fx="FX_RGB_SPLIT">RGB_SPLIT</button>
             <button type="button" class="btn btn-sm" data-quick-fx="FX_AQUA">AQUA</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_ASH_WIND">ASH_WIND</button>
+            <button type="button" class="btn btn-sm" data-quick-fx="FX_DREAD">DREAD</button>
             <button type="button" class="btn btn-sm" data-quick-fx="FX_ENDING">ENDING</button>
           </div>
         </div>
@@ -1392,25 +1600,106 @@
       </div>
     </section>
 
+
+    <!-- ВКЛАДКА НОТ И ИНСПЕКТОРА (ДЛЯ ТАБОВОГО РЕЖИМА И МОБИЛОК) -->
+    <section class="panel panel-notes-tab">
+      <div class="panel-header">
+        <span>🎹 Набивка нот, стаки и микро-тайминг</span>
+      </div>
+      <div class="panel-body">
+        <div class="section-box">
+          <div style="font-size:12px;color:var(--text-secondary);">
+            На телефоне удобнее всего ставить ноты прямо на <strong>10-рядном Пиано-ролле</strong> внизу (режим <code>✎ Правка</code>): тап по строке нужного направления ставит ноту, а тап по другой строке в том же столбце собирает <strong>вертикальный стак</strong>.
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+            <button type="button" class="btn btn-sm" data-nudge-ms="-10">⏪ -10мс</button>
+            <button type="button" class="btn btn-sm" data-nudge-ms="-1">◀ -1мс</button>
+            <button type="button" class="btn btn-sm" data-nudge-ms="1">+1мс ▶</button>
+            <button type="button" class="btn btn-sm" data-nudge-ms="10">+10мс ⏩</button>
+            <button type="button" class="btn btn-sm btn-danger" id="btn-mob-del-selected">🗑 Удалить выбранное</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ПАНЕЛЬ АНАЛИТИКИ ПЛОТНОСТИ ЧАРТА (NPS) И БЕЗЛИМИТНОЙ СЛОЖНОСТИ В БАЛЛАХ -->
+    <section class="panel panel-stats">
+      <div class="panel-header">
+        <span>4. Плотность чарта (NPS) и объективная сложность в баллах (без лимита)</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button type="button" class="btn btn-sm btn-primary" id="btn-apply-auto-difficulty" title="Записать расчётные звёзды сложности в поле difficulty (meta.json)">
+            ★ Записать расчётные звёзды в meta.json
+          </button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="nps-kpi-grid">
+          <div class="nps-kpi-card">
+            <span class="nps-kpi-label">Баллы сложности (SDP)</span>
+            <span class="nps-kpi-val" id="kpi-sdp-points" style="color:#facc15;">0.0</span>
+            <span class="nps-kpi-sub" id="kpi-sdp-rank">Без верхнего лимита</span>
+          </div>
+          <div class="nps-kpi-card">
+            <span class="nps-kpi-label">Честные звёзды (Auto ★)</span>
+            <span class="nps-kpi-val" id="kpi-auto-stars" style="color:#38bdf8;">0.00 ★</span>
+            <span class="nps-kpi-sub" id="kpi-manual-stars-cmp">В meta.json: 0.5 ★</span>
+          </div>
+          <div class="nps-kpi-card">
+            <span class="nps-kpi-label">Средний NPS (активный)</span>
+            <span class="nps-kpi-val" id="kpi-avg-nps">0.00</span>
+            <span class="nps-kpi-sub" id="kpi-total-nps">По всему треку: 0.00 н/с</span>
+          </div>
+          <div class="nps-kpi-card">
+            <span class="nps-kpi-label">Пиковый NPS (Макс 1с / 3с)</span>
+            <span class="nps-kpi-val" id="kpi-peak-nps" style="color:#f43f5e;">0 / 0.00</span>
+            <span class="nps-kpi-sub" id="kpi-p95-nps">95-й перцентиль: 0.0 н/с</span>
+          </div>
+          <div class="nps-kpi-card">
+            <span class="nps-kpi-label">Стаки и Реверсы</span>
+            <span class="nps-kpi-val" id="kpi-stacks-revs">0 / 0</span>
+            <span class="nps-kpi-sub" id="kpi-diags-angles">Диагонали: 0% · Смены ≥90°: 0</span>
+          </div>
+          <div class="nps-kpi-card">
+            <span class="nps-kpi-label">Скролл и Темп</span>
+            <span class="nps-kpi-val" id="kpi-scroll-bpm">1000 мс</span>
+            <span class="nps-kpi-sub" id="kpi-bpm-sub">BPM: 120 ·Множитель чтения: 1.00x</span>
+          </div>
+        </div>
+
+        <div class="section-box" style="margin-top:6px;">
+          <div class="section-title">
+            <span>📈 График плотности нот по секундам (клик по пику — переход к дропу)</span>
+            <span id="nps-chart-hint" style="font-size:11px;color:var(--text-secondary);">1 столбик = 1 секунда</span>
+          </div>
+          <div class="nps-chart-wrap">
+            <canvas id="nps-chart-canvas" width="920" height="110"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <!-- НИЖНИЙ ДОК ТАЙМЛАЙНА -->
   <footer class="timeline-dock">
     <div class="timeline-toolbar">
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <strong style="font-size:12px;color:var(--accent-2);text-transform:uppercase;">Многодорожечный таймлайн</strong>
+        <strong style="font-size:12px;color:var(--accent-2);text-transform:uppercase;">Таймлайн</strong>
         <span style="font-size:11px;color:var(--text-secondary);">
           Двойной клик по дорожке — поставить ноту/эффект · Перетаскивание мышью — сдвиг времени · ПКМ / Delete — удалить · Колесо — прокрутка (Ctrl+колесо — зум)
         </span>
       </div>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <div class="touch-mode-group" title="Режим касания пальцем по таймлайну на телефонах">
-          <button type="button" class="touch-mode-btn active" data-touch-mode="scroll">🖐 Скролл / Курсор</button>
-          <button type="button" class="touch-mode-btn" data-touch-mode="draw">✏ Карандаш (Ноты/FX)</button>
+        <div class="touch-mode-group" title="Вид дорожки нот: 10-рядный Пиано-ролл (удобно для телефонов и стаков) или Компактно (1 ряд)">
+          <button type="button" class="touch-mode-btn active" data-tl-view="pianoroll" id="btn-tl-view-piano">🎹 Пиано-ролл (10 рядов)</button>
+          <button type="button" class="touch-mode-btn" data-tl-view="compact" id="btn-tl-view-compact">📏 Компактно (1 ряд)</button>
+        </div>
+        <div class="touch-mode-group" title="Режим касания пальцем / мышью по таймлайну">
+          <button type="button" class="touch-mode-btn active" data-touch-mode="draw">✎ Правка (Тап = Нота/Стак)</button>
+          <button type="button" class="touch-mode-btn" data-touch-mode="scroll">🖐 Прокрутка / Зум</button>
           <button type="button" class="touch-mode-btn" data-touch-mode="erase">🧹 Ластик</button>
         </div>
-        <label for="zoom-range"  style="font-size:11px;color:var(--text-secondary);">Масштаб:</label>
-        <input type="range" id="zoom-range" min="40" max="600" value="180" style="width:130px;" />
+        <label for="zoom-range" style="font-size:11px;color:var(--text-secondary);">Масштаб:</label>
+        <input type="range" id="zoom-range" min="40" max="600" value="180" style="width:120px;" />
       </div>
     </div>
 
@@ -1456,7 +1745,7 @@
       <div class="credits-card">
         <div class="credits-card-title">Что было использовано</div>
         <div class="credits-card-body">
-          HTML5 Canvas 2D, Web Audio API, встроенный упаковщик ZIP/Deflate (<code>.swmap</code>), конвертер ресурсов Godot 4 (<code>.ctex</code> / <code>.oggvorbisstr</code>), карты из официального плейлиста <em>Swipetava OST</em>.
+          HTML5 Canvas 2D, Web Audio API, встроенный упаковщик ZIP/Deflate (<code>.swmap</code>), все 24 карты и треки из 3 официальных плейлистов (<em>Swipetava OST</em>, <em>RCGD VERS OST Vol. 1 &amp; Vol. 2</em>).
         </div>
       </div>
     </div>
@@ -1471,6 +1760,7 @@
         />
       </a>
       <span>Распространяется под лицензией <a href="http://www.wtfpl.net/" target="_blank" rel="noopener noreferrer" style="padding:0;border:none;background:none;color:var(--accent-2);text-decoration:underline;">WTFPL</a></span>
+      <span><a href="https://github.com/awsombreaker123/SwipEdit" target="_blank" rel="noopener noreferrer" style="padding:0;border:none;background:none;color:var(--accent-2);text-decoration:underline;">Исходный код</a></span>
     </div>
   </footer>
 

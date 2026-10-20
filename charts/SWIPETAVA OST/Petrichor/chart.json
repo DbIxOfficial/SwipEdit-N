@@ -1,0 +1,2329 @@
+{
+  "bpm": 100,
+  "noteTravelTime": 1000,
+  "gridOffset": 0.105,
+  "timing": [
+    {
+      "time": 0.105,
+      "bpm": 100
+    }
+  ],
+  "title": "Sha pridymajy",
+  "artist": "Arvicheskyy",
+  "notes": [
+    {
+      "time": 0.105,
+      "type": "UP"
+    },
+    {
+      "time": 2.805,
+      "type": "DOWN"
+    },
+    {
+      "time": 5.205,
+      "type": "UP"
+    },
+    {
+      "time": 7.605,
+      "type": "DOWN"
+    },
+    {
+      "time": 10.005,
+      "type": "UP"
+    },
+    {
+      "time": 12.405,
+      "type": "DOWN"
+    },
+    {
+      "time": 14.805,
+      "type": "UP"
+    },
+    {
+      "time": 17.205,
+      "type": "DOWN"
+    },
+    {
+      "time": 19.305,
+      "type": "UP"
+    },
+    {
+      "time": 22.005,
+      "type": "DOWN"
+    },
+    {
+      "time": 24.405,
+      "type": "UP"
+    },
+    {
+      "time": 24.705,
+      "type": "DOWN"
+    },
+    {
+      "time": 25.005,
+      "type": "UP"
+    },
+    {
+      "time": 25.305,
+      "type": "DOWN"
+    },
+    {
+      "time": 25.605,
+      "type": "UP"
+    },
+    {
+      "time": 25.905,
+      "type": "DOWN"
+    },
+    {
+      "time": 26.217,
+      "type": "UP"
+    },
+    {
+      "time": 26.517,
+      "type": "DOWN"
+    },
+    {
+      "time": 26.817,
+      "type": "UP"
+    },
+    {
+      "time": 27.117,
+      "type": "DOWN"
+    },
+    {
+      "time": 27.417,
+      "type": "UP"
+    },
+    {
+      "time": 27.63,
+      "type": "DOWN"
+    },
+    {
+      "time": 27.855,
+      "type": "UP"
+    },
+    {
+      "time": 28.08,
+      "type": "DOWN"
+    },
+    {
+      "time": 28.305,
+      "type": "UP"
+    },
+    {
+      "time": 29.505,
+      "type": "UP"
+    },
+    {
+      "time": 29.73,
+      "type": "DOWN"
+    },
+    {
+      "time": 29.955,
+      "type": "UP"
+    },
+    {
+      "time": 30.18,
+      "type": "DOWN"
+    },
+    {
+      "time": 30.405,
+      "type": "LEFT"
+    },
+    {
+      "time": 30.63,
+      "type": "RIGHT"
+    },
+    {
+      "time": 30.855,
+      "type": "LEFT"
+    },
+    {
+      "time": 31.08,
+      "type": "RIGHT"
+    },
+    {
+      "time": 31.305,
+      "type": "UP"
+    },
+    {
+      "time": 31.905,
+      "type": "UP"
+    },
+    {
+      "time": 32.13,
+      "type": "DOWN"
+    },
+    {
+      "time": 32.355,
+      "type": "UP"
+    },
+    {
+      "time": 32.58,
+      "type": "DOWN"
+    },
+    {
+      "time": 32.805,
+      "type": "LEFT"
+    },
+    {
+      "time": 33.03,
+      "type": "REVERSE"
+    },
+    {
+      "time": 33.255,
+      "type": "LEFT"
+    },
+    {
+      "time": 33.48,
+      "type": "REVERSE_BACK"
+    },
+    {
+      "time": 33.705,
+      "type": "UP"
+    },
+    {
+      "time": 34.305,
+      "type": "DOWN"
+    },
+    {
+      "time": 34.53,
+      "type": "UP"
+    },
+    {
+      "time": 34.755,
+      "type": "DOWN"
+    },
+    {
+      "time": 34.98,
+      "type": "UP"
+    },
+    {
+      "time": 35.205,
+      "type": "RIGHT"
+    },
+    {
+      "time": 35.43,
+      "type": "LEFT"
+    },
+    {
+      "time": 35.655,
+      "type": "RIGHT"
+    },
+    {
+      "time": 35.88,
+      "type": "LEFT"
+    },
+    {
+      "time": 36.105,
+      "type": "UP"
+    },
+    {
+      "time": 36.705,
+      "type": "DOWN"
+    },
+    {
+      "time": 36.93,
+      "type": "UP"
+    },
+    {
+      "time": 37.155,
+      "type": "DOWN"
+    },
+    {
+      "time": 37.38,
+      "type": "UP"
+    },
+    {
+      "time": 37.605,
+      "type": "RIGHT"
+    },
+    {
+      "time": 37.83,
+      "type": "LEFT"
+    },
+    {
+      "time": 38.055,
+      "type": "RIGHT"
+    },
+    {
+      "time": 38.28,
+      "type": "LEFT"
+    },
+    {
+      "time": 38.505,
+      "type": "UP"
+    },
+    {
+      "time": 39.105,
+      "type": "UP"
+    },
+    {
+      "time": 39.33,
+      "type": "DOWN"
+    },
+    {
+      "time": 39.555,
+      "type": "UP"
+    },
+    {
+      "time": 39.78,
+      "type": "DOWN"
+    },
+    {
+      "time": 40.005,
+      "type": "LEFT"
+    },
+    {
+      "time": 40.23,
+      "type": "RIGHT"
+    },
+    {
+      "time": 40.455,
+      "type": "LEFT"
+    },
+    {
+      "time": 40.68,
+      "type": "RIGHT"
+    },
+    {
+      "time": 40.905,
+      "type": "UP"
+    },
+    {
+      "time": 41.505,
+      "type": "UP"
+    },
+    {
+      "time": 41.73,
+      "type": "DOWN"
+    },
+    {
+      "time": 41.955,
+      "type": "UP"
+    },
+    {
+      "time": 42.18,
+      "type": "DOWN"
+    },
+    {
+      "time": 42.405,
+      "type": "LEFT"
+    },
+    {
+      "time": 42.63,
+      "type": "REVERSE"
+    },
+    {
+      "time": 42.855,
+      "type": "LEFT"
+    },
+    {
+      "time": 43.08,
+      "type": "REVERSE_BACK"
+    },
+    {
+      "time": 43.305,
+      "type": "UP"
+    },
+    {
+      "time": 43.918,
+      "type": "DOWN"
+    },
+    {
+      "time": 44.143,
+      "type": "UP"
+    },
+    {
+      "time": 44.368,
+      "type": "DOWN"
+    },
+    {
+      "time": 44.593,
+      "type": "UP"
+    },
+    {
+      "time": 44.818,
+      "type": "RIGHT"
+    },
+    {
+      "time": 45.043,
+      "type": "LEFT"
+    },
+    {
+      "time": 45.268,
+      "type": "RIGHT"
+    },
+    {
+      "time": 45.493,
+      "type": "LEFT"
+    },
+    {
+      "time": 45.718,
+      "type": "UP"
+    },
+    {
+      "time": 46.305,
+      "type": "UP"
+    },
+    {
+      "time": 46.53,
+      "type": "DOWN"
+    },
+    {
+      "time": 46.755,
+      "type": "UP"
+    },
+    {
+      "time": 46.98,
+      "type": "DOWN"
+    },
+    {
+      "time": 47.205,
+      "type": "LEFT"
+    },
+    {
+      "time": 47.43,
+      "type": "RIGHT"
+    },
+    {
+      "time": 47.655,
+      "type": "LEFT"
+    },
+    {
+      "time": 47.88,
+      "type": "RIGHT"
+    },
+    {
+      "time": 48.105,
+      "type": "UP"
+    },
+    {
+      "time": 48.705,
+      "type": "DOWN"
+    },
+    {
+      "time": 48.93,
+      "type": "UP"
+    },
+    {
+      "time": 49.155,
+      "type": "DOWN"
+    },
+    {
+      "time": 49.38,
+      "type": "UP"
+    },
+    {
+      "time": 49.605,
+      "type": "RIGHT"
+    },
+    {
+      "time": 49.83,
+      "type": "LEFT"
+    },
+    {
+      "time": 50.055,
+      "type": "RIGHT"
+    },
+    {
+      "time": 50.28,
+      "type": "LEFT"
+    },
+    {
+      "time": 50.505,
+      "type": "UP"
+    },
+    {
+      "time": 51.105,
+      "type": "UP"
+    },
+    {
+      "time": 51.33,
+      "type": "DOWN"
+    },
+    {
+      "time": 51.555,
+      "type": "UP"
+    },
+    {
+      "time": 51.78,
+      "type": "DOWN"
+    },
+    {
+      "time": 52.005,
+      "type": "LEFT"
+    },
+    {
+      "time": 52.23,
+      "type": "REVERSE"
+    },
+    {
+      "time": 52.455,
+      "type": "LEFT"
+    },
+    {
+      "time": 52.68,
+      "type": "REVERSE_BACK"
+    },
+    {
+      "time": 52.905,
+      "type": "UP"
+    },
+    {
+      "time": 53.505,
+      "type": "DOWN"
+    },
+    {
+      "time": 53.73,
+      "type": "UP"
+    },
+    {
+      "time": 53.955,
+      "type": "DOWN"
+    },
+    {
+      "time": 54.18,
+      "type": "UP"
+    },
+    {
+      "time": 54.405,
+      "type": "RIGHT"
+    },
+    {
+      "time": 54.63,
+      "type": "LEFT"
+    },
+    {
+      "time": 54.855,
+      "type": "RIGHT"
+    },
+    {
+      "time": 55.08,
+      "type": "LEFT"
+    },
+    {
+      "time": 55.305,
+      "type": "UP"
+    },
+    {
+      "time": 55.905,
+      "type": "UP"
+    },
+    {
+      "time": 56.13,
+      "type": "DOWN"
+    },
+    {
+      "time": 56.355,
+      "type": "UP"
+    },
+    {
+      "time": 56.58,
+      "type": "DOWN"
+    },
+    {
+      "time": 56.805,
+      "type": "LEFT"
+    },
+    {
+      "time": 57.03,
+      "type": "RIGHT"
+    },
+    {
+      "time": 57.255,
+      "type": "LEFT"
+    },
+    {
+      "time": 57.48,
+      "type": "RIGHT"
+    },
+    {
+      "time": 57.705,
+      "type": "UP"
+    },
+    {
+      "time": 58.305,
+      "type": "DOWN"
+    },
+    {
+      "time": 58.53,
+      "type": "UP"
+    },
+    {
+      "time": 58.755,
+      "type": "DOWN"
+    },
+    {
+      "time": 58.98,
+      "type": "UP"
+    },
+    {
+      "time": 59.205,
+      "type": "RIGHT"
+    },
+    {
+      "time": 59.43,
+      "type": "LEFT"
+    },
+    {
+      "time": 59.655,
+      "type": "RIGHT"
+    },
+    {
+      "time": 59.88,
+      "type": "LEFT"
+    },
+    {
+      "time": 60.105,
+      "type": "UP"
+    },
+    {
+      "time": 60.705,
+      "type": "UP"
+    },
+    {
+      "time": 60.93,
+      "type": "DOWN"
+    },
+    {
+      "time": 61.155,
+      "type": "UP"
+    },
+    {
+      "time": 61.38,
+      "type": "DOWN"
+    },
+    {
+      "time": 61.605,
+      "type": "LEFT"
+    },
+    {
+      "time": 61.83,
+      "type": "REVERSE"
+    },
+    {
+      "time": 62.055,
+      "type": "LEFT"
+    },
+    {
+      "time": 62.28,
+      "type": "REVERSE_BACK"
+    },
+    {
+      "time": 62.505,
+      "type": "UP"
+    },
+    {
+      "time": 63.105,
+      "type": "UP"
+    },
+    {
+      "time": 63.33,
+      "type": "DOWN"
+    },
+    {
+      "time": 63.555,
+      "type": "UP"
+    },
+    {
+      "time": 63.78,
+      "type": "DOWN"
+    },
+    {
+      "time": 64.005,
+      "type": "LEFT"
+    },
+    {
+      "time": 64.23,
+      "type": "RIGHT"
+    },
+    {
+      "time": 64.455,
+      "type": "LEFT"
+    },
+    {
+      "time": 64.68,
+      "type": "RIGHT"
+    },
+    {
+      "time": 64.905,
+      "type": "UP"
+    },
+    {
+      "time": 65.505,
+      "type": "DOWN"
+    },
+    {
+      "time": 65.73,
+      "type": "UP"
+    },
+    {
+      "time": 65.955,
+      "type": "DOWN"
+    },
+    {
+      "time": 66.18,
+      "type": "UP"
+    },
+    {
+      "time": 66.405,
+      "type": "RIGHT"
+    },
+    {
+      "time": 66.63,
+      "type": "LEFT"
+    },
+    {
+      "time": 66.855,
+      "type": "RIGHT"
+    },
+    {
+      "time": 67.08,
+      "type": "LEFT"
+    },
+    {
+      "time": 67.305,
+      "type": "UP"
+    },
+    {
+      "time": 67.83,
+      "type": "UP"
+    },
+    {
+      "time": 68.43,
+      "type": "DOWN"
+    },
+    {
+      "time": 69.03,
+      "type": "UP"
+    },
+    {
+      "time": 69.63,
+      "type": "DOWN"
+    },
+    {
+      "time": 70.23,
+      "type": "RIGHT"
+    },
+    {
+      "time": 70.83,
+      "type": "LEFT"
+    },
+    {
+      "time": 71.43,
+      "type": "RIGHT"
+    },
+    {
+      "time": 72.03,
+      "type": "LEFT"
+    },
+    {
+      "time": 72.63,
+      "type": "UP"
+    },
+    {
+      "time": 73.23,
+      "type": "DOWN"
+    },
+    {
+      "time": 73.83,
+      "type": "UP"
+    },
+    {
+      "time": 74.43,
+      "type": "DOWN"
+    },
+    {
+      "time": 75.03,
+      "type": "LEFT"
+    },
+    {
+      "time": 75.63,
+      "type": "RIGHT"
+    },
+    {
+      "time": 76.23,
+      "type": "LEFT"
+    },
+    {
+      "time": 76.83,
+      "type": "REVERSE"
+    },
+    {
+      "time": 77.43,
+      "type": "UP"
+    },
+    {
+      "time": 78.03,
+      "type": "DOWN"
+    },
+    {
+      "time": 78.63,
+      "type": "UP"
+    },
+    {
+      "time": 79.23,
+      "type": "DOWN"
+    },
+    {
+      "time": 79.83,
+      "type": "RIGHT"
+    },
+    {
+      "time": 80.43,
+      "type": "LEFT"
+    },
+    {
+      "time": 81.03,
+      "type": "RIGHT"
+    },
+    {
+      "time": 81.63,
+      "type": "LEFT"
+    },
+    {
+      "time": 82.23,
+      "type": "UP"
+    },
+    {
+      "time": 82.83,
+      "type": "DOWN"
+    },
+    {
+      "time": 83.43,
+      "type": "UP"
+    },
+    {
+      "time": 84.03,
+      "type": "DOWN"
+    },
+    {
+      "time": 84.63,
+      "type": "LEFT"
+    },
+    {
+      "time": 85.23,
+      "type": "RIGHT"
+    },
+    {
+      "time": 85.83,
+      "type": "LEFT"
+    },
+    {
+      "time": 86.43,
+      "type": "REVERSE_BACK"
+    },
+    {
+      "time": 87.105,
+      "type": "UP"
+    },
+    {
+      "time": 87.405,
+      "type": "DOWN"
+    },
+    {
+      "time": 87.705,
+      "type": "UP"
+    },
+    {
+      "time": 88.005,
+      "type": "DOWN"
+    },
+    {
+      "time": 88.305,
+      "type": "UP"
+    },
+    {
+      "time": 88.605,
+      "type": "DOWN"
+    },
+    {
+      "time": 89.505,
+      "type": "LEFT"
+    },
+    {
+      "time": 89.805,
+      "type": "RIGHT"
+    },
+    {
+      "time": 90.105,
+      "type": "LEFT"
+    },
+    {
+      "time": 90.405,
+      "type": "RIGHT"
+    },
+    {
+      "time": 90.705,
+      "type": "LEFT"
+    },
+    {
+      "time": 91.005,
+      "type": "RIGHT"
+    },
+    {
+      "time": 91.905,
+      "type": "UP"
+    },
+    {
+      "time": 92.205,
+      "type": "DOWN"
+    },
+    {
+      "time": 92.505,
+      "type": "UP"
+    },
+    {
+      "time": 92.805,
+      "type": "DOWN"
+    },
+    {
+      "time": 93.105,
+      "type": "UP"
+    },
+    {
+      "time": 93.405,
+      "type": "DOWN"
+    },
+    {
+      "time": 94.305,
+      "type": "LEFT"
+    },
+    {
+      "time": 94.605,
+      "type": "RIGHT"
+    },
+    {
+      "time": 94.83,
+      "type": "LEFT"
+    },
+    {
+      "time": 95.055,
+      "type": "RIGHT"
+    },
+    {
+      "time": 95.28,
+      "type": "LEFT"
+    },
+    {
+      "time": 95.505,
+      "type": "RIGHT"
+    },
+    {
+      "time": 95.73,
+      "type": "LEFT"
+    },
+    {
+      "time": 96.705,
+      "type": "UP"
+    },
+    {
+      "time": 96.93,
+      "type": "DOWN"
+    },
+    {
+      "time": 97.155,
+      "type": "UP"
+    },
+    {
+      "time": 97.38,
+      "type": "DOWN"
+    },
+    {
+      "time": 97.605,
+      "type": "LEFT"
+    },
+    {
+      "time": 97.83,
+      "type": "RIGHT"
+    },
+    {
+      "time": 98.055,
+      "type": "LEFT"
+    },
+    {
+      "time": 98.28,
+      "type": "RIGHT"
+    },
+    {
+      "time": 98.505,
+      "type": "UP"
+    },
+    {
+      "time": 99.105,
+      "type": "UP"
+    },
+    {
+      "time": 99.33,
+      "type": "DOWN"
+    },
+    {
+      "time": 99.555,
+      "type": "UP"
+    },
+    {
+      "time": 99.78,
+      "type": "DOWN"
+    },
+    {
+      "time": 100.005,
+      "type": "LEFT"
+    },
+    {
+      "time": 100.23,
+      "type": "REVERSE"
+    },
+    {
+      "time": 100.455,
+      "type": "LEFT"
+    },
+    {
+      "time": 100.68,
+      "type": "REVERSE_BACK"
+    },
+    {
+      "time": 100.905,
+      "type": "UP"
+    },
+    {
+      "time": 101.505,
+      "type": "DOWN"
+    },
+    {
+      "time": 101.73,
+      "type": "UP"
+    },
+    {
+      "time": 101.955,
+      "type": "DOWN"
+    },
+    {
+      "time": 102.18,
+      "type": "UP"
+    },
+    {
+      "time": 102.405,
+      "type": "RIGHT"
+    },
+    {
+      "time": 102.63,
+      "type": "LEFT"
+    },
+    {
+      "time": 102.855,
+      "type": "RIGHT"
+    },
+    {
+      "time": 103.08,
+      "type": "LEFT"
+    },
+    {
+      "time": 103.305,
+      "type": "UP"
+    },
+    {
+      "time": 103.905,
+      "type": "DOWN"
+    },
+    {
+      "time": 104.13,
+      "type": "UP"
+    },
+    {
+      "time": 104.355,
+      "type": "DOWN"
+    },
+    {
+      "time": 104.58,
+      "type": "UP"
+    },
+    {
+      "time": 104.805,
+      "type": "RIGHT"
+    },
+    {
+      "time": 105.03,
+      "type": "LEFT"
+    },
+    {
+      "time": 105.255,
+      "type": "RIGHT"
+    },
+    {
+      "time": 105.48,
+      "type": "LEFT"
+    },
+    {
+      "time": 105.705,
+      "type": "UP"
+    },
+    {
+      "time": 106.305,
+      "type": "UP"
+    },
+    {
+      "time": 106.53,
+      "type": "DOWN"
+    },
+    {
+      "time": 106.755,
+      "type": "UP"
+    },
+    {
+      "time": 106.98,
+      "type": "DOWN"
+    },
+    {
+      "time": 107.205,
+      "type": "LEFT"
+    },
+    {
+      "time": 107.43,
+      "type": "RIGHT"
+    },
+    {
+      "time": 107.655,
+      "type": "LEFT"
+    },
+    {
+      "time": 107.88,
+      "type": "RIGHT"
+    },
+    {
+      "time": 108.105,
+      "type": "UP"
+    },
+    {
+      "time": 108.705,
+      "type": "UP"
+    },
+    {
+      "time": 108.93,
+      "type": "DOWN"
+    },
+    {
+      "time": 109.155,
+      "type": "UP"
+    },
+    {
+      "time": 109.38,
+      "type": "DOWN"
+    },
+    {
+      "time": 109.605,
+      "type": "LEFT"
+    },
+    {
+      "time": 109.83,
+      "type": "REVERSE"
+    },
+    {
+      "time": 110.055,
+      "type": "LEFT"
+    },
+    {
+      "time": 110.28,
+      "type": "REVERSE_BACK"
+    },
+    {
+      "time": 110.505,
+      "type": "UP"
+    },
+    {
+      "time": 111.118,
+      "type": "DOWN"
+    },
+    {
+      "time": 111.343,
+      "type": "UP"
+    },
+    {
+      "time": 111.568,
+      "type": "DOWN"
+    },
+    {
+      "time": 111.793,
+      "type": "UP"
+    },
+    {
+      "time": 112.018,
+      "type": "RIGHT"
+    },
+    {
+      "time": 112.243,
+      "type": "LEFT"
+    },
+    {
+      "time": 112.468,
+      "type": "RIGHT"
+    },
+    {
+      "time": 112.693,
+      "type": "LEFT"
+    },
+    {
+      "time": 112.918,
+      "type": "UP"
+    },
+    {
+      "time": 113.505,
+      "type": "UP"
+    },
+    {
+      "time": 113.73,
+      "type": "DOWN"
+    },
+    {
+      "time": 113.955,
+      "type": "UP"
+    },
+    {
+      "time": 114.18,
+      "type": "DOWN"
+    },
+    {
+      "time": 114.405,
+      "type": "LEFT"
+    },
+    {
+      "time": 114.63,
+      "type": "RIGHT"
+    },
+    {
+      "time": 114.855,
+      "type": "LEFT"
+    },
+    {
+      "time": 115.08,
+      "type": "RIGHT"
+    },
+    {
+      "time": 115.305,
+      "type": "UP"
+    },
+    {
+      "time": 115.905,
+      "type": "DOWN"
+    },
+    {
+      "time": 116.13,
+      "type": "UP"
+    },
+    {
+      "time": 116.355,
+      "type": "DOWN"
+    },
+    {
+      "time": 116.58,
+      "type": "UP"
+    },
+    {
+      "time": 116.805,
+      "type": "RIGHT"
+    },
+    {
+      "time": 117.03,
+      "type": "LEFT"
+    },
+    {
+      "time": 117.255,
+      "type": "RIGHT"
+    },
+    {
+      "time": 117.48,
+      "type": "LEFT"
+    },
+    {
+      "time": 117.705,
+      "type": "UP"
+    },
+    {
+      "time": 118.305,
+      "type": "UP"
+    },
+    {
+      "time": 118.53,
+      "type": "DOWN"
+    },
+    {
+      "time": 118.755,
+      "type": "UP"
+    },
+    {
+      "time": 118.98,
+      "type": "DOWN"
+    },
+    {
+      "time": 119.205,
+      "type": "LEFT"
+    },
+    {
+      "time": 119.43,
+      "type": "REVERSE"
+    },
+    {
+      "time": 119.655,
+      "type": "LEFT"
+    },
+    {
+      "time": 119.88,
+      "type": "REVERSE_BACK"
+    },
+    {
+      "time": 120.105,
+      "type": "UP"
+    },
+    {
+      "time": 120.705,
+      "type": "UP"
+    },
+    {
+      "time": 120.93,
+      "type": "DOWN"
+    },
+    {
+      "time": 121.155,
+      "type": "UP"
+    },
+    {
+      "time": 121.38,
+      "type": "DOWN"
+    },
+    {
+      "time": 121.605,
+      "type": "LEFT"
+    },
+    {
+      "time": 121.83,
+      "type": "RIGHT"
+    },
+    {
+      "time": 122.055,
+      "type": "LEFT"
+    },
+    {
+      "time": 122.28,
+      "type": "RIGHT"
+    },
+    {
+      "time": 122.505,
+      "type": "UP"
+    },
+    {
+      "time": 123.105,
+      "type": "DOWN"
+    },
+    {
+      "time": 123.33,
+      "type": "UP"
+    },
+    {
+      "time": 123.555,
+      "type": "DOWN"
+    },
+    {
+      "time": 123.78,
+      "type": "UP"
+    },
+    {
+      "time": 124.005,
+      "type": "RIGHT"
+    },
+    {
+      "time": 124.23,
+      "type": "LEFT"
+    },
+    {
+      "time": 124.455,
+      "type": "RIGHT"
+    },
+    {
+      "time": 124.68,
+      "type": "LEFT"
+    },
+    {
+      "time": 124.905,
+      "type": "UP"
+    },
+    {
+      "time": 125.505,
+      "type": "DOWN"
+    },
+    {
+      "time": 125.73,
+      "type": "UP"
+    },
+    {
+      "time": 125.955,
+      "type": "DOWN"
+    },
+    {
+      "time": 126.18,
+      "type": "UP"
+    },
+    {
+      "time": 126.405,
+      "type": "RIGHT"
+    },
+    {
+      "time": 126.63,
+      "type": "LEFT"
+    },
+    {
+      "time": 126.855,
+      "type": "RIGHT"
+    },
+    {
+      "time": 127.08,
+      "type": "LEFT"
+    },
+    {
+      "time": 127.305,
+      "type": "UP"
+    },
+    {
+      "time": 127.905,
+      "type": "UP"
+    },
+    {
+      "time": 128.13,
+      "type": "DOWN"
+    },
+    {
+      "time": 128.355,
+      "type": "UP"
+    },
+    {
+      "time": 128.58,
+      "type": "DOWN"
+    },
+    {
+      "time": 128.805,
+      "type": "LEFT"
+    },
+    {
+      "time": 129.03,
+      "type": "REVERSE"
+    },
+    {
+      "time": 129.255,
+      "type": "LEFT"
+    },
+    {
+      "time": 129.48,
+      "type": "REVERSE_BACK"
+    },
+    {
+      "time": 129.705,
+      "type": "UP"
+    },
+    {
+      "time": 130.305,
+      "type": "DOWN"
+    },
+    {
+      "time": 130.53,
+      "type": "UP"
+    },
+    {
+      "time": 130.755,
+      "type": "DOWN"
+    },
+    {
+      "time": 130.98,
+      "type": "UP"
+    },
+    {
+      "time": 131.205,
+      "type": "RIGHT"
+    },
+    {
+      "time": 131.43,
+      "type": "LEFT"
+    },
+    {
+      "time": 131.655,
+      "type": "RIGHT"
+    },
+    {
+      "time": 131.88,
+      "type": "LEFT"
+    },
+    {
+      "time": 132.105,
+      "type": "UP"
+    },
+    {
+      "time": 132.692,
+      "type": "UP"
+    },
+    {
+      "time": 132.917,
+      "type": "DOWN"
+    },
+    {
+      "time": 133.142,
+      "type": "UP"
+    },
+    {
+      "time": 133.367,
+      "type": "DOWN"
+    },
+    {
+      "time": 133.592,
+      "type": "LEFT"
+    },
+    {
+      "time": 133.817,
+      "type": "RIGHT"
+    },
+    {
+      "time": 134.042,
+      "type": "LEFT"
+    },
+    {
+      "time": 134.267,
+      "type": "RIGHT"
+    },
+    {
+      "time": 134.492,
+      "type": "UP"
+    },
+    {
+      "time": 135.105,
+      "type": "UP"
+    },
+    {
+      "time": 135.705,
+      "type": "UP"
+    },
+    {
+      "time": 136.305,
+      "type": "UP"
+    },
+    {
+      "time": 136.905,
+      "type": "UP"
+    }
+  ],
+  "events": [
+    {
+      "time": 0,
+      "type": "FLASH",
+      "duration": 28.755
+    },
+    {
+      "time": 0.255,
+      "type": "BG_COLOR",
+      "duration": 28.2,
+      "color": "#330035"
+    },
+    {
+      "time": 22.005,
+      "type": "CAMERA_BOB_ON"
+    },
+    {
+      "time": 25.38,
+      "type": "NOTE_SPEED",
+      "speed": 1.25
+    },
+    {
+      "time": 26.73,
+      "type": "NOTE_SPEED",
+      "speed": 1.5
+    },
+    {
+      "time": 28.005,
+      "type": "NOTE_SPEED",
+      "speed": 1.75
+    },
+    {
+      "time": 28.305,
+      "type": "BLACKOUT",
+      "duration": 0.6
+    },
+    {
+      "time": 28.905,
+      "type": "FLASH"
+    },
+    {
+      "time": 28.905,
+      "type": "SHAKE"
+    },
+    {
+      "time": 30.705,
+      "type": "FLASH",
+      "duration": 0.6
+    },
+    {
+      "time": 31.305,
+      "type": "SHAKE"
+    },
+    {
+      "time": 33.03,
+      "type": "FX_GLITCH",
+      "duration": 0.375
+    },
+    {
+      "time": 33.03,
+      "type": "NOTES_FLOW_RIGHT"
+    },
+    {
+      "time": 33.03,
+      "type": "SHAKE"
+    },
+    {
+      "time": 33.03,
+      "type": "DISCO",
+      "duration": 0.675
+    },
+    {
+      "time": 33.105,
+      "type": "FX_PIXELATE",
+      "duration": 0.6
+    },
+    {
+      "time": 33.18,
+      "type": "FX_INVERT",
+      "duration": 0.45
+    },
+    {
+      "time": 33.255,
+      "type": "SHAKE"
+    },
+    {
+      "time": 33.405,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 33.48,
+      "type": "NOTES_FLOW_LEFT"
+    },
+    {
+      "time": 33.48,
+      "type": "SHAKE"
+    },
+    {
+      "time": 33.705,
+      "type": "SHAKE"
+    },
+    {
+      "time": 35.505,
+      "type": "FLASH",
+      "duration": 0.6
+    },
+    {
+      "time": 36.105,
+      "type": "SHAKE"
+    },
+    {
+      "time": 38.205,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 38.505,
+      "type": "SHAKE"
+    },
+    {
+      "time": 40.305,
+      "type": "FLASH",
+      "duration": 0.6
+    },
+    {
+      "time": 40.905,
+      "type": "SHAKE"
+    },
+    {
+      "time": 42.63,
+      "type": "NOTES_FLOW_RIGHT"
+    },
+    {
+      "time": 42.63,
+      "type": "FX_GLITCH",
+      "duration": 0.375
+    },
+    {
+      "time": 42.63,
+      "type": "SHAKE"
+    },
+    {
+      "time": 42.63,
+      "type": "DISCO",
+      "duration": 0.675
+    },
+    {
+      "time": 42.705,
+      "type": "FX_PIXELATE",
+      "duration": 0.6
+    },
+    {
+      "time": 42.78,
+      "type": "FX_INVERT",
+      "duration": 0.45
+    },
+    {
+      "time": 42.855,
+      "type": "SHAKE"
+    },
+    {
+      "time": 43.005,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 43.08,
+      "type": "NOTES_FLOW_LEFT"
+    },
+    {
+      "time": 43.08,
+      "type": "SHAKE"
+    },
+    {
+      "time": 43.305,
+      "type": "SHAKE"
+    },
+    {
+      "time": 45.418,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 45.705,
+      "type": "SHAKE"
+    },
+    {
+      "time": 47.505,
+      "type": "FLASH",
+      "duration": 0.6
+    },
+    {
+      "time": 47.505,
+      "type": "SHAKE"
+    },
+    {
+      "time": 47.505,
+      "type": "FX_GLITCH",
+      "duration": 0.225
+    },
+    {
+      "time": 48.105,
+      "type": "SHAKE"
+    },
+    {
+      "time": 50.205,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 50.505,
+      "type": "SHAKE"
+    },
+    {
+      "time": 52.23,
+      "type": "NOTES_FLOW_RIGHT"
+    },
+    {
+      "time": 52.23,
+      "type": "FX_GLITCH",
+      "duration": 0.375
+    },
+    {
+      "time": 52.23,
+      "type": "SHAKE"
+    },
+    {
+      "time": 52.23,
+      "type": "DISCO",
+      "duration": 0.675
+    },
+    {
+      "time": 52.305,
+      "type": "FX_PIXELATE",
+      "duration": 0.6
+    },
+    {
+      "time": 52.38,
+      "type": "FX_INVERT",
+      "duration": 0.45
+    },
+    {
+      "time": 52.455,
+      "type": "SHAKE"
+    },
+    {
+      "time": 52.605,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 52.68,
+      "type": "NOTES_FLOW_LEFT"
+    },
+    {
+      "time": 52.68,
+      "type": "SHAKE"
+    },
+    {
+      "time": 52.905,
+      "type": "SHAKE"
+    },
+    {
+      "time": 55.005,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 55.305,
+      "type": "SHAKE"
+    },
+    {
+      "time": 57.105,
+      "type": "FLASH",
+      "duration": 0.6
+    },
+    {
+      "time": 57.705,
+      "type": "SHAKE"
+    },
+    {
+      "time": 59.805,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 60.105,
+      "type": "SHAKE"
+    },
+    {
+      "time": 61.83,
+      "type": "NOTES_FLOW_RIGHT"
+    },
+    {
+      "time": 61.83,
+      "type": "FX_GLITCH",
+      "duration": 0.375
+    },
+    {
+      "time": 61.83,
+      "type": "SHAKE"
+    },
+    {
+      "time": 61.83,
+      "type": "DISCO",
+      "duration": 0.675
+    },
+    {
+      "time": 61.905,
+      "type": "FX_PIXELATE",
+      "duration": 0.6
+    },
+    {
+      "time": 61.98,
+      "type": "FX_INVERT",
+      "duration": 0.45
+    },
+    {
+      "time": 62.055,
+      "type": "SHAKE"
+    },
+    {
+      "time": 62.205,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 62.28,
+      "type": "NOTES_FLOW_LEFT"
+    },
+    {
+      "time": 62.28,
+      "type": "SHAKE"
+    },
+    {
+      "time": 62.505,
+      "type": "SHAKE"
+    },
+    {
+      "time": 64.305,
+      "type": "FLASH",
+      "duration": 0.6
+    },
+    {
+      "time": 64.905,
+      "type": "SHAKE"
+    },
+    {
+      "time": 67.005,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 67.305,
+      "type": "CAMERA_BOB_OFF"
+    },
+    {
+      "time": 67.305,
+      "type": "SHAKE"
+    },
+    {
+      "time": 67.305,
+      "type": "BG_COLOR",
+      "color": "#62a0ea"
+    },
+    {
+      "time": 67.38,
+      "type": "NOTE_SPEED",
+      "speed": 1.25
+    },
+    {
+      "time": 67.83,
+      "type": "FLASH",
+      "duration": 1.8
+    },
+    {
+      "time": 69.63,
+      "type": "SHAKE"
+    },
+    {
+      "time": 70.23,
+      "type": "FLASH",
+      "duration": 1.8
+    },
+    {
+      "time": 72.03,
+      "type": "SHAKE"
+    },
+    {
+      "time": 72.63,
+      "type": "FLASH",
+      "duration": 1.8
+    },
+    {
+      "time": 74.43,
+      "type": "SHAKE"
+    },
+    {
+      "time": 75.03,
+      "type": "FLASH",
+      "duration": 1.8
+    },
+    {
+      "time": 76.83,
+      "type": "NOTES_FLOW_RIGHT"
+    },
+    {
+      "time": 76.83,
+      "type": "CAMERA_BOB_ON"
+    },
+    {
+      "time": 76.83,
+      "type": "SHAKE"
+    },
+    {
+      "time": 77.43,
+      "type": "FLASH",
+      "duration": 1.8
+    },
+    {
+      "time": 79.23,
+      "type": "SHAKE"
+    },
+    {
+      "time": 79.83,
+      "type": "FLASH",
+      "duration": 1.8
+    },
+    {
+      "time": 81.63,
+      "type": "SHAKE"
+    },
+    {
+      "time": 82.23,
+      "type": "FLASH",
+      "duration": 1.8
+    },
+    {
+      "time": 84.03,
+      "type": "SHAKE"
+    },
+    {
+      "time": 84.63,
+      "type": "FLASH",
+      "duration": 1.8
+    },
+    {
+      "time": 86.43,
+      "type": "CAMERA_BOB_OFF"
+    },
+    {
+      "time": 86.43,
+      "type": "NOTES_FLOW_LEFT"
+    },
+    {
+      "time": 86.43,
+      "type": "SHAKE"
+    },
+    {
+      "time": 90.405,
+      "type": "FLASH",
+      "duration": 5.7
+    },
+    {
+      "time": 91.08,
+      "type": "NOTE_SPEED",
+      "speed": 1.5
+    },
+    {
+      "time": 95.805,
+      "type": "NOTE_SPEED",
+      "speed": 1.75
+    },
+    {
+      "time": 96.105,
+      "type": "CAMERA_BOB_ON"
+    },
+    {
+      "time": 96.105,
+      "type": "BG_COLOR",
+      "color": "#330035"
+    },
+    {
+      "time": 96.105,
+      "type": "SHAKE"
+    },
+    {
+      "time": 97.905,
+      "type": "FLASH",
+      "duration": 0.6
+    },
+    {
+      "time": 98.505,
+      "type": "SHAKE"
+    },
+    {
+      "time": 100.23,
+      "type": "NOTES_FLOW_RIGHT"
+    },
+    {
+      "time": 100.23,
+      "type": "FX_GLITCH",
+      "duration": 0.375
+    },
+    {
+      "time": 100.23,
+      "type": "SHAKE"
+    },
+    {
+      "time": 100.23,
+      "type": "DISCO",
+      "duration": 0.675
+    },
+    {
+      "time": 100.305,
+      "type": "FX_PIXELATE",
+      "duration": 0.6
+    },
+    {
+      "time": 100.38,
+      "type": "FX_INVERT",
+      "duration": 0.45
+    },
+    {
+      "time": 100.455,
+      "type": "SHAKE"
+    },
+    {
+      "time": 100.605,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 100.68,
+      "type": "NOTES_FLOW_LEFT"
+    },
+    {
+      "time": 100.68,
+      "type": "SHAKE"
+    },
+    {
+      "time": 100.905,
+      "type": "SHAKE"
+    },
+    {
+      "time": 102.705,
+      "type": "FLASH",
+      "duration": 0.6
+    },
+    {
+      "time": 103.305,
+      "type": "SHAKE"
+    },
+    {
+      "time": 105.405,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 105.705,
+      "type": "SHAKE"
+    },
+    {
+      "time": 107.505,
+      "type": "FLASH",
+      "duration": 0.6
+    },
+    {
+      "time": 108.105,
+      "type": "SHAKE"
+    },
+    {
+      "time": 109.83,
+      "type": "NOTES_FLOW_RIGHT"
+    },
+    {
+      "time": 109.83,
+      "type": "FX_GLITCH",
+      "duration": 0.375
+    },
+    {
+      "time": 109.83,
+      "type": "SHAKE"
+    },
+    {
+      "time": 109.83,
+      "type": "DISCO",
+      "duration": 0.675
+    },
+    {
+      "time": 109.905,
+      "type": "FX_PIXELATE",
+      "duration": 0.6
+    },
+    {
+      "time": 109.98,
+      "type": "FX_INVERT",
+      "duration": 0.45
+    },
+    {
+      "time": 110.055,
+      "type": "SHAKE"
+    },
+    {
+      "time": 110.205,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 110.28,
+      "type": "NOTES_FLOW_LEFT"
+    },
+    {
+      "time": 110.28,
+      "type": "SHAKE"
+    },
+    {
+      "time": 110.505,
+      "type": "SHAKE"
+    },
+    {
+      "time": 112.618,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 112.905,
+      "type": "SHAKE"
+    },
+    {
+      "time": 114.705,
+      "type": "FLASH",
+      "duration": 0.6
+    },
+    {
+      "time": 114.705,
+      "type": "SHAKE"
+    },
+    {
+      "time": 114.705,
+      "type": "FX_GLITCH",
+      "duration": 0.225
+    },
+    {
+      "time": 115.305,
+      "type": "SHAKE"
+    },
+    {
+      "time": 117.405,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 117.705,
+      "type": "SHAKE"
+    },
+    {
+      "time": 119.43,
+      "type": "NOTES_FLOW_RIGHT"
+    },
+    {
+      "time": 119.43,
+      "type": "FX_GLITCH",
+      "duration": 0.375
+    },
+    {
+      "time": 119.43,
+      "type": "SHAKE"
+    },
+    {
+      "time": 119.43,
+      "type": "DISCO",
+      "duration": 0.675
+    },
+    {
+      "time": 119.505,
+      "type": "FX_PIXELATE",
+      "duration": 0.6
+    },
+    {
+      "time": 119.58,
+      "type": "FX_INVERT",
+      "duration": 0.45
+    },
+    {
+      "time": 119.655,
+      "type": "SHAKE"
+    },
+    {
+      "time": 119.805,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 119.88,
+      "type": "NOTES_FLOW_LEFT"
+    },
+    {
+      "time": 119.88,
+      "type": "SHAKE"
+    },
+    {
+      "time": 120.105,
+      "type": "SHAKE"
+    },
+    {
+      "time": 121.905,
+      "type": "FLASH",
+      "duration": 0.6
+    },
+    {
+      "time": 122.505,
+      "type": "SHAKE"
+    },
+    {
+      "time": 124.305,
+      "type": "FLASH",
+      "duration": 0.6
+    },
+    {
+      "time": 124.905,
+      "type": "SHAKE"
+    },
+    {
+      "time": 127.005,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 127.305,
+      "type": "SHAKE"
+    },
+    {
+      "time": 129.03,
+      "type": "NOTES_FLOW_RIGHT"
+    },
+    {
+      "time": 129.03,
+      "type": "FX_GLITCH",
+      "duration": 0.375
+    },
+    {
+      "time": 129.03,
+      "type": "SHAKE"
+    },
+    {
+      "time": 129.03,
+      "type": "DISCO",
+      "duration": 0.675
+    },
+    {
+      "time": 129.105,
+      "type": "FX_PIXELATE",
+      "duration": 0.6
+    },
+    {
+      "time": 129.18,
+      "type": "FX_INVERT",
+      "duration": 0.45
+    },
+    {
+      "time": 129.255,
+      "type": "SHAKE"
+    },
+    {
+      "time": 129.405,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 129.48,
+      "type": "NOTES_FLOW_LEFT"
+    },
+    {
+      "time": 129.48,
+      "type": "SHAKE"
+    },
+    {
+      "time": 129.705,
+      "type": "SHAKE"
+    },
+    {
+      "time": 131.805,
+      "type": "FLASH",
+      "duration": 0.3
+    },
+    {
+      "time": 132.105,
+      "type": "FLASH",
+      "duration": 2.4
+    },
+    {
+      "time": 132.105,
+      "type": "SHAKE"
+    },
+    {
+      "time": 134.505,
+      "type": "CAMERA_BOB_OFF"
+    },
+    {
+      "time": 134.505,
+      "type": "SHAKE"
+    },
+    {
+      "time": 136.83,
+      "type": "FX_GLITCH",
+      "duration": 0.2
+    },
+    {
+      "time": 136.98,
+      "type": "BLACKOUT",
+      "duration": 2.25
+    }
+  ],
+  "audioFile": "track.mp3",
+  "audioFormat": "mp3",
+  "coverFile": "Cover.png"
+}

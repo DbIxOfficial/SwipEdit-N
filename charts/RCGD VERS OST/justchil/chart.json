@@ -1,0 +1,679 @@
+{
+  "bpm": 90,
+  "noteTravelTime": 1000,
+  "title": "test",
+  "artist": "test",
+  "notes": [
+    {
+      "time": 0.392,
+      "type": "RIGHT"
+    },
+    {
+      "time": 2.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 5.416,
+      "type": "RIGHT"
+    },
+    {
+      "time": 7.998,
+      "type": "UP"
+    },
+    {
+      "time": 10.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 11.352,
+      "type": "UP"
+    },
+    {
+      "time": 12.019,
+      "type": "RIGHT"
+    },
+    {
+      "time": 12.686,
+      "type": "DOWN"
+    },
+    {
+      "time": 13.352,
+      "type": "RIGHT"
+    },
+    {
+      "time": 14.019,
+      "type": "UP"
+    },
+    {
+      "time": 14.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 15.352,
+      "type": "LEFT"
+    },
+    {
+      "time": 16.019,
+      "type": "DOWN"
+    },
+    {
+      "time": 16.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 17.352,
+      "type": "UP"
+    },
+    {
+      "time": 18.019,
+      "type": "RIGHT"
+    },
+    {
+      "time": 18.686,
+      "type": "UP"
+    },
+    {
+      "time": 19.352,
+      "type": "RIGHT"
+    },
+    {
+      "time": 20.019,
+      "type": "RIGHT"
+    },
+    {
+      "time": 20.686,
+      "type": "DOWN"
+    },
+    {
+      "time": 21.352,
+      "type": "RIGHT"
+    },
+    {
+      "time": 22.019,
+      "type": "UP"
+    },
+    {
+      "time": 22.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 23.352,
+      "type": "DOWN"
+    },
+    {
+      "time": 24.019,
+      "type": "LEFT"
+    },
+    {
+      "time": 24.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 25.352,
+      "type": "UP"
+    },
+    {
+      "time": 26.019,
+      "type": "RIGHT"
+    },
+    {
+      "time": 26.686,
+      "type": "LEFT"
+    },
+    {
+      "time": 27.352,
+      "type": "DOWN"
+    },
+    {
+      "time": 28.019,
+      "type": "RIGHT"
+    },
+    {
+      "time": 28.686,
+      "type": "UP"
+    },
+    {
+      "time": 29.352,
+      "type": "LEFT"
+    },
+    {
+      "time": 30.019,
+      "type": "DOWN"
+    },
+    {
+      "time": 30.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 31.352,
+      "type": "UP"
+    },
+    {
+      "time": 32.019,
+      "type": "RIGHT"
+    },
+    {
+      "time": 32.766,
+      "type": "DOWN"
+    },
+    {
+      "time": 33.374,
+      "type": "RIGHT"
+    },
+    {
+      "time": 34.003,
+      "type": "UP"
+    },
+    {
+      "time": 34.654,
+      "type": "DOWN"
+    },
+    {
+      "time": 35.358,
+      "type": "UP"
+    },
+    {
+      "time": 35.987,
+      "type": "RIGHT"
+    },
+    {
+      "time": 36.691,
+      "type": "DOWN"
+    },
+    {
+      "time": 37.427,
+      "type": "DOWN"
+    },
+    {
+      "time": 38.163,
+      "type": "RIGHT"
+    },
+    {
+      "time": 38.76,
+      "type": "UP"
+    },
+    {
+      "time": 39.454,
+      "type": "RIGHT"
+    },
+    {
+      "time": 40.094,
+      "type": "LEFT"
+    },
+    {
+      "time": 40.787,
+      "type": "RIGHT"
+    },
+    {
+      "time": 41.438,
+      "type": "DOWN"
+    },
+    {
+      "time": 42.056,
+      "type": "RIGHT"
+    },
+    {
+      "time": 42.707,
+      "type": "UP"
+    },
+    {
+      "time": 43.464,
+      "type": "RIGHT"
+    },
+    {
+      "time": 44.094,
+      "type": "DOWN"
+    },
+    {
+      "time": 44.798,
+      "type": "DOWN"
+    },
+    {
+      "time": 45.448,
+      "type": "LEFT"
+    },
+    {
+      "time": 46.142,
+      "type": "UP"
+    },
+    {
+      "time": 46.75,
+      "type": "UP"
+    },
+    {
+      "time": 47.379,
+      "type": "UP"
+    },
+    {
+      "time": 48.083,
+      "type": "RIGHT"
+    },
+    {
+      "time": 48.83,
+      "type": "DOWN"
+    },
+    {
+      "time": 49.416,
+      "type": "DOWN"
+    },
+    {
+      "time": 50.046,
+      "type": "DOWN"
+    },
+    {
+      "time": 50.632,
+      "type": "RIGHT"
+    },
+    {
+      "time": 51.368,
+      "type": "UP"
+    },
+    {
+      "time": 52.008,
+      "type": "LEFT"
+    },
+    {
+      "time": 52.766,
+      "type": "DOWN"
+    },
+    {
+      "time": 53.448,
+      "type": "UP"
+    },
+    {
+      "time": 54.019,
+      "type": "RIGHT"
+    },
+    {
+      "time": 54.686,
+      "type": "UP"
+    },
+    {
+      "time": 55.352,
+      "type": "RIGHT"
+    },
+    {
+      "time": 56.019,
+      "type": "DOWN"
+    },
+    {
+      "time": 56.686,
+      "type": "LEFT"
+    },
+    {
+      "time": 57.352,
+      "type": "LEFT"
+    },
+    {
+      "time": 58.019,
+      "type": "LEFT"
+    },
+    {
+      "time": 58.686,
+      "type": "UP"
+    },
+    {
+      "time": 59.352,
+      "type": "RIGHT"
+    },
+    {
+      "time": 60.019,
+      "type": "RIGHT"
+    },
+    {
+      "time": 60.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 61.342,
+      "type": "DOWN"
+    },
+    {
+      "time": 62.019,
+      "type": "LEFT"
+    },
+    {
+      "time": 62.686,
+      "type": "LEFT"
+    },
+    {
+      "time": 63.352,
+      "type": "LEFT"
+    },
+    {
+      "time": 64.019,
+      "type": "UP"
+    },
+    {
+      "time": 64.691,
+      "type": "RIGHT"
+    },
+    {
+      "time": 65.352,
+      "type": "RIGHT"
+    },
+    {
+      "time": 65.992,
+      "type": "RIGHT"
+    },
+    {
+      "time": 66.686,
+      "type": "DOWN"
+    },
+    {
+      "time": 67.368,
+      "type": "RIGHT"
+    },
+    {
+      "time": 67.976,
+      "type": "RIGHT"
+    },
+    {
+      "time": 68.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 69.352,
+      "type": "LEFT"
+    },
+    {
+      "time": 70.024,
+      "type": "UP"
+    },
+    {
+      "time": 70.686,
+      "type": "UP"
+    },
+    {
+      "time": 71.352,
+      "type": "UP"
+    },
+    {
+      "time": 72.019,
+      "type": "DOWN"
+    },
+    {
+      "time": 72.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 73.352,
+      "type": "RIGHT"
+    },
+    {
+      "time": 74.019,
+      "type": "RIGHT"
+    },
+    {
+      "time": 74.686,
+      "type": "UP"
+    },
+    {
+      "time": 75.368,
+      "type": "RIGHT"
+    },
+    {
+      "time": 75.966,
+      "type": "DOWN"
+    },
+    {
+      "time": 76.627,
+      "type": "RIGHT"
+    },
+    {
+      "time": 77.338,
+      "type": "UP_LEFT"
+    },
+    {
+      "time": 78.11,
+      "type": "LEFT"
+    },
+    {
+      "time": 78.76,
+      "type": "DOWN"
+    },
+    {
+      "time": 79.422,
+      "type": "RIGHT"
+    },
+    {
+      "time": 80.106,
+      "type": "DOWN_RIGHT"
+    },
+    {
+      "time": 80.808,
+      "type": "LEFT"
+    },
+    {
+      "time": 81.406,
+      "type": "UP"
+    },
+    {
+      "time": 82.056,
+      "type": "RIGHT"
+    },
+    {
+      "time": 82.707,
+      "type": "RIGHT"
+    },
+    {
+      "time": 83.454,
+      "type": "DOWN"
+    },
+    {
+      "time": 84.008,
+      "type": "LEFT"
+    },
+    {
+      "time": 84.659,
+      "type": "UP"
+    },
+    {
+      "time": 85.352,
+      "type": "RIGHT"
+    },
+    {
+      "time": 86.019,
+      "type": "DOWN"
+    },
+    {
+      "time": 86.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 87.371,
+      "type": "DOWN"
+    },
+    {
+      "time": 88.019,
+      "type": "UP"
+    },
+    {
+      "time": 88.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 89.352,
+      "type": "DOWN"
+    },
+    {
+      "time": 90.019,
+      "type": "LEFT"
+    },
+    {
+      "time": 90.686,
+      "type": "UP_RIGHT"
+    },
+    {
+      "time": 91.352,
+      "type": "RIGHT"
+    },
+    {
+      "time": 92.019,
+      "type": "UP"
+    },
+    {
+      "time": 92.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 93.352,
+      "type": "DOWN"
+    },
+    {
+      "time": 94.019,
+      "type": "RIGHT"
+    },
+    {
+      "time": 94.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 95.352,
+      "type": "DOWN"
+    },
+    {
+      "time": 96.019,
+      "type": "RIGHT"
+    },
+    {
+      "time": 96.686,
+      "type": "RIGHT"
+    },
+    {
+      "time": 97.352,
+      "type": "RIGHT"
+    },
+    {
+      "time": 98.019,
+      "type": "RIGHT"
+    },
+    {
+      "time": 98.686,
+      "type": "DOWN"
+    },
+    {
+      "time": 99.352,
+      "type": "LEFT"
+    },
+    {
+      "time": 100.019,
+      "type": "LEFT"
+    },
+    {
+      "time": 100.686,
+      "type": "LEFT"
+    },
+    {
+      "time": 101.352,
+      "type": "UP"
+    },
+    {
+      "time": 102.019,
+      "type": "DOWN"
+    },
+    {
+      "time": 102.686,
+      "type": "UP"
+    },
+    {
+      "time": 103.352,
+      "type": "RIGHT"
+    },
+    {
+      "time": 104.019,
+      "type": "DOWN"
+    },
+    {
+      "time": 104.686,
+      "type": "UP"
+    },
+    {
+      "time": 105.352,
+      "type": "DOWN"
+    },
+    {
+      "time": 106.019,
+      "type": "UP"
+    }
+  ],
+  "events": [
+    {
+      "time": 0,
+      "type": "FX_DUOTONE",
+      "duration": 10.852
+    },
+    {
+      "time": 10.669,
+      "type": "CAMERA_BOB_ON"
+    },
+    {
+      "time": 10.727,
+      "type": "FLASH"
+    },
+    {
+      "time": 32.092,
+      "type": "FLASH"
+    },
+    {
+      "time": 34.596,
+      "type": "FLASH"
+    },
+    {
+      "time": 37.352,
+      "type": "FLASH"
+    },
+    {
+      "time": 40.019,
+      "type": "FLASH"
+    },
+    {
+      "time": 42.686,
+      "type": "FLASH"
+    },
+    {
+      "time": 45.352,
+      "type": "FLASH"
+    },
+    {
+      "time": 48.019,
+      "type": "FLASH"
+    },
+    {
+      "time": 50.686,
+      "type": "FLASH"
+    },
+    {
+      "time": 53.352,
+      "type": "FLASH"
+    },
+    {
+      "time": 53.352,
+      "type": "CAMERA_BOB_OFF"
+    },
+    {
+      "time": 53.43,
+      "type": "FX_BW",
+      "duration": 32
+    },
+    {
+      "time": 58.596,
+      "type": "FLASH"
+    },
+    {
+      "time": 58.675,
+      "type": "CAMERA_BOB_ON"
+    },
+    {
+      "time": 85.263,
+      "type": "CAMERA_BOB_OFF"
+    },
+    {
+      "time": 85.352,
+      "type": "FLASH"
+    }
+  ],
+  "audioFile": "track.ogg",
+  "audioFormat": "ogg",
+  "coverFile": "cover.png"
+}
