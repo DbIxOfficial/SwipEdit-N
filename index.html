@@ -1014,28 +1014,143 @@
       display: none;
     }
 
-    /* На мобильных экранах принудительно удобный вкладочный интерфейс */
+    /* На мобильных экранах адаптация отступов и вкладок */
     @media (max-width: 980px) {
-      .workspace-grid {
+      body[data-layout-mode="tabs"] .workspace-grid {
         display: block !important;
         padding: 6px !important;
       }
-      .workspace-grid > .panel {
+      body[data-layout-mode="tabs"] .workspace-grid > .panel {
         display: none !important;
         max-height: none !important;
       }
-      body[data-active-tab="preview"] .panel-preview,
-      body[data-active-tab="notes"] .panel-notes-tab,
-      body[data-active-tab="events"] .panel-fx,
-      body[data-active-tab="stats"] .panel-stats,
-      body[data-active-tab="map"] .panel-meta {
+      body[data-layout-mode="tabs"][data-active-tab="preview"] .panel-preview,
+      body[data-layout-mode="tabs"][data-active-tab="notes"] .panel-notes-tab,
+      body[data-layout-mode="tabs"][data-active-tab="events"] .panel-fx,
+      body[data-layout-mode="tabs"][data-active-tab="stats"] .panel-stats,
+      body[data-layout-mode="tabs"][data-active-tab="map"] .panel-meta {
         display: flex !important;
+      }
+      body[data-layout-mode="tiles"] .workspace-grid,
+      body[data-layout-mode="grid"] .workspace-grid {
+        grid-template-columns: 1fr !important;
       }
       .timeline-dock {
         position: relative !important;
         padding: 6px 8px 10px !important;
       }
     }
+
+    /* В режиме ПК (Плитки) скрываем кнопки вкладок */
+    body[data-layout-mode="tiles"] #app-tabs-pills,
+    body[data-layout-mode="grid"] #app-tabs-pills {
+      display: none !important;
+    }
+
+    body[data-layout-mode="grid"] .workspace-grid {
+      display: grid;
+      grid-template-columns: 330px minmax(420px, 1fr) 360px;
+      gap: 10px;
+      padding: 10px;
+      align-items: start;
+    }
+    body[data-layout-mode="grid"] .panel-stats {
+      grid-column: 1 / -1;
+    }
+    body[data-layout-mode="grid"] .panel-notes-tab {
+      display: none;
+    }
+
+    /* Индикатор происхождения карты (SwipEdit vs сторонний редактор) */
+    .origin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: help;
+      transition: all 0.18s ease;
+      user-select: none;
+    }
+    .origin-badge-green {
+      background: rgba(34, 197, 94, 0.16);
+      border: 1px solid rgba(34, 197, 94, 0.55);
+      color: #4ade80;
+    }
+    .origin-badge-red {
+      background: rgba(244, 63, 94, 0.18);
+      border: 1px solid rgba(244, 63, 94, 0.65);
+      color: #fb7185;
+      box-shadow: 0 0 10px rgba(244, 63, 94, 0.25);
+    }
+
+    /* Микшер громкости в превью */
+    .audio-mixer-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      width: 100%;
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 11px;
+    }
+    .mixer-channel {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 170px;
+    }
+    .mixer-channel input[type="range"] {
+      flex: 1;
+      min-width: 65px;
+      accent-color: var(--accent-2);
+    }
+    .mixer-val {
+      font-variant-numeric: tabular-nums;
+      color: var(--text-secondary);
+      min-width: 34px;
+      text-align: right;
+      font-weight: 700;
+    }
+
+    /* Попап с формулой SDP */
+    .sdp-modal-card {
+      width: 100%;
+      max-width: 680px;
+      max-height: 88vh;
+      overflow-y: auto;
+      background: linear-gradient(180deg, #191530 0%, #0e0b1c 100%);
+      border: 1.5px solid var(--border-hi);
+      border-radius: 14px;
+      padding: 18px 20px;
+      color: var(--text-primary);
+      box-shadow: 0 20px 55px rgba(0, 0, 0, 0.78);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      font-size: 12.5px;
+      line-height: 1.55;
+    }
+    .sdp-formula-box {
+      background: rgba(7, 6, 14, 0.75);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent-2);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11.5px;
+      color: #e2e8f0;
+      overflow-x: auto;
+    }
+
 
     /* Карточки статистики NPS и сложности */
     .nps-kpi-grid {
@@ -1121,6 +1236,7 @@
       <span>Ср. NPS: <strong id="stat-avg-nps">0.00</strong></span>
       <span>Пик 1с: <strong id="stat-peak-nps">0</strong></span>
       <span title="Объективная сложность чарта в баллах (без лимита)">Сложность: <strong id="stat-sdp-points" style="color:#facc15;">0 pts</strong> (<strong id="stat-auto-stars" style="color:#38bdf8;">0.0★</strong>)</span>
+      <span id="editor-origin-badge" class="origin-badge origin-badge-green" title="Подпись SwipEdit проверена: карта создана в SwipEdit">🟢 SwipEdit</span>
     </div>
 
     <div class="toolbar-actions">
@@ -1128,7 +1244,7 @@
         📂 Открыть .swmap
         <input type="file" id="input-swmap-file" accept=".swmap,.zip" hidden />
       </label>
-      <button type="button" class="btn" id="btn-load-demo" title="Загрузить демо-карту (Just chilll — Arvicheskyy)">
+      <button type="button" class="btn" id="btn-load-demo" title="Загрузить демо-карту из 1.1 (Tutorial — Arvicheskyy)">
         ✨ Демо
       </button>
       <button type="button" class="btn" id="btn-undo" title="Отменить (Ctrl+Z)">↶ Отмена</button>
@@ -1164,7 +1280,7 @@
     <!-- левая колонка -->
     <section class="panel panel-meta">
       <div class="panel-header">
-        <span>1. Параметры карты и ресурсы</span>
+        <span>Параметры карты и ресурсы</span>
       </div>
       <div class="panel-body">
 
@@ -1204,10 +1320,10 @@
             <input type="text" id="meta-artist" placeholder="Scott Lloyd Shelly" />
           </div>
           <div class="field-row">
-            <label for="meta-difficulty">Сложность (1–10)</label>
+            <label for="meta-difficulty">Сложность (0.5–10 ★)</label>
             <div style="display:flex;align-items:center;gap:6px;width:100%;">
-              <input type="range" id="meta-difficulty" min="0.5" max="12" step="0.5" value="7" style="flex:1;" />
-              <input type="number" id="meta-difficulty-num" min="0.5" max="12" step="0.5" value="7" style="width:56px;" />
+              <input type="range" id="meta-difficulty" min="0.5" max="10" step="0.5" value="0.5" style="flex:1;" />
+              <input type="number" id="meta-difficulty-num" min="0.5" max="10" step="0.5" value="0.5" style="width:56px;" />
             </div>
           </div>
           <div class="field-row">
@@ -1244,6 +1360,10 @@
           <div style="font-size:11px;color:var(--text-muted);">
             <code>noteTravelTime</code> задаёт базовую скорость подлёта (1000 мс по умолчанию), а динамические ускорения/замедления внутри трека ставятся событием <code>NOTE_SPEED</code>.
           </div>
+          <label class="chk-label" style="margin-top:6px;" title="Включает обучающие паузы из 1.1 (tutorial_controller.gd) на первой обычной и первой реверс-ноте карты">
+            <input type="checkbox" id="chart-tutorial-mode" />
+            🎓 Обучающие паузы из туториала (<code>"tutorial": "first_swipe"</code>)
+          </label>
         </div>
 
         <!-- Точки смены BPM (timing[]) -->
@@ -1280,7 +1400,7 @@
             </div>
             <label class="btn btn-sm">
               🎵 Загрузить
-              <input type="file" id="input-audio-file" accept=".ogg,.mp3,.wav,.oggvorbisstr,.oggstr,audio/*" hidden />
+              <input type="file" id="input-audio-file" accept=".ogg,.mp3,.wav,audio/*" hidden />
             </label>
           </div>
 
@@ -1291,7 +1411,7 @@
             </div>
             <label class="btn btn-sm">
               🖼 Обложка
-              <input type="file" id="input-cover-file" accept="image/*,.ctex,.stex" hidden />
+              <input type="file" id="input-cover-file" accept="image/*" hidden />
             </label>
           </div>
 
@@ -1302,7 +1422,7 @@
             </div>
             <label class="btn btn-sm">
               🌌 Фон
-              <input type="file" id="input-bg-file" accept="image/*,.ctex,.stex" hidden />
+              <input type="file" id="input-bg-file" accept="image/*" hidden />
             </label>
           </div>
         </div>
@@ -1313,16 +1433,32 @@
     <!-- центр -->
     <section class="panel panel-preview">
       <div class="panel-header">
-        <span>2. Живое превью арены Swipetava (все шейдеры и надписи)</span>
-        <div style="display:flex;gap:10px;">
-          <label class="chk-label"><input type="checkbox" id="check-hitsound" checked /> Хитсаунд</label>
-          <label class="chk-label"><input type="checkbox" id="check-metronome" /> Метроном</label>
-        </div>
+        <span>Превью карты</span>
+        <span style="font-size:11px;color:var(--text-secondary);">Микшер звука ниже ↓</span>
       </div>
 
       <div class="preview-stage">
         <div class="canvas-frame">
           <canvas id="preview-canvas" width="768" height="432"></canvas>
+        </div>
+
+        <!-- Микшер громкости: BGM, Хитсаунды, Метроном -->
+        <div class="audio-mixer-bar" aria-label="Регулировка громкости превью">
+          <div class="mixer-channel" title="Громкость музыки (BGM)">
+            <span>🎵 Музыка:</span>
+            <input type="range" id="vol-bgm" min="0" max="100" step="1" value="70" />
+            <span class="mixer-val" id="vol-bgm-val">70%</span>
+          </div>
+          <div class="mixer-channel" title="Включить и настроить громкость хитсаундов нот (до 200% усиления)">
+            <label class="chk-label"><input type="checkbox" id="check-hitsound" checked /> 🥁 Хитсаунд:</label>
+            <input type="range" id="vol-hitsound" min="0" max="200" step="5" value="110" />
+            <span class="mixer-val" id="vol-hitsound-val">110%</span>
+          </div>
+          <div class="mixer-channel" title="Включить и настроить громкость метронома по сетке BPM (до 200% усиления)">
+            <label class="chk-label"><input type="checkbox" id="check-metronome" /> ⏱ Метроном:</label>
+            <input type="range" id="vol-metronome" min="0" max="200" step="5" value="110" />
+            <span class="mixer-val" id="vol-metronome-val">110%</span>
+          </div>
         </div>
 
         <!-- Транспорт-панель -->
@@ -1414,7 +1550,7 @@
     <!-- ПРАВАЯ КОЛОНКА: НОТЫ, ЭФФЕКТЫ, СКОРОСТЬ СКРОЛЛА И НАДПИСИ ВМЕСТО КОМБО -->
     <section class="panel panel-fx">
       <div class="panel-header">
-        <span>3. Ноты, скорость, эффекты и надписи</span>
+        <span>Ноты, скорость, эффекты и надписи</span>
       </div>
       <div class="panel-body">
 
@@ -1601,7 +1737,7 @@
     </section>
 
 
-    <!-- ВКЛАДКА НОТ И ИНСПЕКТОРА (ДЛЯ ТАБОВОГО РЕЖИМА И МОБИЛОК) -->
+    <!-- смещение -->
     <section class="panel panel-notes-tab">
       <div class="panel-header">
         <span>🎹 Набивка нот, стаки и микро-тайминг</span>
@@ -1622,12 +1758,15 @@
       </div>
     </section>
 
-    <!-- ПАНЕЛЬ АНАЛИТИКИ ПЛОТНОСТИ ЧАРТА (NPS) И БЕЗЛИМИТНОЙ СЛОЖНОСТИ В БАЛЛАХ -->
+    <!-- панель с аналитикой -->
     <section class="panel panel-stats">
       <div class="panel-header">
-        <span>4. Плотность чарта (NPS) и объективная сложность в баллах (без лимита)</span>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <button type="button" class="btn btn-sm btn-primary" id="btn-apply-auto-difficulty" title="Записать расчётные звёзды сложности в поле difficulty (meta.json)">
+        <span>Плотность чарта (NPS) и объективная сложность в баллах (SDP)</span>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <button type="button" class="btn btn-sm" id="btn-open-sdp-modal" title="Открыть подробный разбор математической формулы SDP и расчёт по текущей карте">
+            ❓ Как считается SDP (Формула)
+          </button>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-apply-auto-difficulty" title="Записать расчётные звёзды сложности в поле difficulty (meta.json, макс. 10★)">
             ★ Записать расчётные звёзды в meta.json
           </button>
         </div>
@@ -1714,6 +1853,73 @@
   </footer>
 
 
+    <!-- sdp это что? (what?) -->
+  <div class="cubeface-modal-backdrop" id="sdp-formula-modal" hidden>
+    <div class="sdp-modal-card" role="dialog" aria-modal="true" aria-labelledby="sdp-modal-title">
+      <button type="button" class="cubeface-modal-close" id="btn-close-sdp-modal" title="Закрыть">✕</button>
+      <div style="font-size:15px;font-weight:800;color:var(--accent-2);" id="sdp-modal-title">
+        📐 Формула объективной сложности SDP (SwipEdit's Difficulty Points)
+      </div>
+      <div style="color:var(--text-secondary);font-size:12px;">
+        В отличие от ручного поля <code>difficulty</code> в <code>meta.json</code> (которое в игре ограничено <code>10.0★</code> и выставляется автором вручную), оценка <strong>SDP</strong> вычисляется напрямую из геометрии и таймингов чарта и <strong>не имеет верхнего потолка</strong> — это позволяет объективнее оценивать сложность у множества карт.
+      </div>
+
+      <div>
+        <strong>1. Плотность и активный отрезок (Active Span):</strong>
+        <div class="sdp-formula-box">
+          T_span = max(1.0, t_last_note − t_first_note)<br/>
+          NPS_avg = N_notes / T_span &nbsp;|&nbsp; NPS_peak3s = max_window_3s / 3.0
+        </div>
+      </div>
+
+      <div>
+        <strong>2. Вес каждого таймкода (w_i) — стаки, диагонали, углы и реверсы:</strong>
+        <div class="sdp-formula-box">
+          w_i = 1.0 + 0.55·(k_i − 1) + 0.15·D_i + 0.65·R_i + 0.22·(Δθ_i / 180°)
+        </div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">
+          • <code>k_i</code> — число нот в вертикальном стаке на одном таймкоде (<code>≤ 5 мс</code>);<br/>
+          • <code>D_i</code> — наличие диагонального свайпа (<code>+0.15</code>); <code>R_i</code> — нота <code>REVERSE</code> / <code>REVERSE_BACK</code> (<code>+0.65</code>);<br/>
+          • <code>Δθ_i ≥ 90°</code> — резкий разворот направления между соседними нотами при интервале <code>Δt_i &lt; 0.35 с</code>.
+        </div>
+      </div>
+
+      <div>
+        <strong>3. Скорость чтения (M_speed) и мгновенный стрейн (strain_i):</strong>
+        <div class="sdp-formula-box">
+          T_eff = noteTravelTime / NOTE_SPEED_i<br/>
+          M_speed = (1000 / max(180, T_eff))^0.38<br/>
+          strain_i = (w_i · M_speed) / (max(0.055, Δt_i))^0.80
+        </div>
+      </div>
+
+      <div>
+        <strong>4. Множитель длины и выносливости марафона (L_mod и E_pts):</strong>
+        <div class="sdp-formula-box">
+          L_base = clamp(T_span / 85, 0.25, 1.85)^0.45<br/>
+          B_marathon = 1 + 0.34·max(0, (T_span − 95)/55) + 0.42·max(0, (N_notes − 240)/180)<br/>
+          L_mod = L_base · B_marathon<br/>
+          E_pts = 35 · (N_notes / 100)^0.75 · (T_span / 60)^0.35
+        </div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">
+          Короткие спам-карты (&lt;30 с) штрафуются множителем <code>L_base</code>, а длинные выматывающие треки (&gt;95 с и &gt;240 нот, как <em>CPAMOTA</em>) получают прогрессивный бонус выносливости.
+        </div>
+      </div>
+
+      <div>
+        <strong>5. Итоговый балл SDP и перевод в честные звёзды (Auto ★):</strong>
+        <div class="sdp-formula-box">
+          SDP = (33.5·NPS_avg + 10.8·NPS_peak3s + 6.0·mean(strain) + 3.7·P90(strain)) · L_mod + E_pts<br/>
+          Auto ★ = round_0.5(SDP / 65) &nbsp;&nbsp;(1★ ≈ 65 SDP; 1–5★ белые, 5.5–10★ красные поверх, &gt;10★ Impossible List)
+        </div>
+      </div>
+
+      <div id="sdp-live-breakdown" style="background:var(--bg-1);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11.5px;">
+        Загрузка расчёта текущей карты...
+      </div>
+    </div>
+  </div>
+
   <!-- huh? -->
   <div class="cubeface-modal-backdrop" id="cubeface-modal" hidden>
     <div class="cubeface-modal-card" role="dialog" aria-modal="true">
@@ -1745,7 +1951,7 @@
       <div class="credits-card">
         <div class="credits-card-title">Что было использовано</div>
         <div class="credits-card-body">
-          HTML5 Canvas 2D, Web Audio API, встроенный упаковщик ZIP/Deflate (<code>.swmap</code>), все 24 карты и треки из 3 официальных плейлистов (<em>Swipetava OST</em>, <em>RCGD VERS OST Vol. 1 &amp; Vol. 2</em>).
+          HTML5 Canvas 2D, Web Audio API, встроенный упаковщик ZIP/Deflate (<code>.swmap</code>), все 24 карты и треки из 3 официальных плейлистов (<em>Swipetava OST</em>, <em>RCGD VERSE OST Vol. 1 &amp; Vol. 2</em>).
         </div>
       </div>
     </div>
