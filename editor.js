@@ -5190,3 +5190,70 @@
 
   window.addEventListener('DOMContentLoaded', initUI);
 })();
+
+function drawArrowShape(ctx, type, a, b, c, d) {
+  const hasXY = typeof c === 'number';
+  const x = hasXY ? a : 0;
+  const y = hasXY ? b : 0;
+  const r = hasXY ? c : (typeof a === 'number' ? a : 18);
+  const color = (hasXY ? d : b) || (typeof NOTE_MAP !== 'undefined' && NOTE_MAP[type] ? NOTE_MAP[type].color : '#38bdf8');
+
+  ctx.save();
+  if (hasXY) ctx.translate(x, y);
+
+  if (type === 'REVERSE' || type === 'REVERSE_BACK') {
+    const ccw = type === 'REVERSE_BACK';
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = Math.max(2, r * 0.22);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.56, ccw ? Math.PI * 0.25 : -Math.PI * 0.75, ccw ? Math.PI * 1.65 : Math.PI * 0.65, ccw);
+    ctx.stroke();
+
+    const tipAngle = ccw ? Math.PI * 1.65 : Math.PI * 0.65;
+    const tx = Math.cos(tipAngle) * r * 0.56;
+    const ty = Math.sin(tipAngle) * r * 0.56;
+    ctx.translate(tx, ty);
+    ctx.rotate(tipAngle + (ccw ? -Math.PI / 2 : Math.PI / 2));
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.28);
+    ctx.lineTo(r * 0.28, r * 0.22);
+    ctx.lineTo(-r * 0.28, r * 0.22);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
+
+  const angles = {
+    RIGHT: 0,
+    DOWN_RIGHT: Math.PI * 0.25,
+    DOWN: Math.PI * 0.5,
+    DOWN_LEFT: Math.PI * 0.75,
+    LEFT: Math.PI,
+    UP_LEFT: -Math.PI * 0.75,
+    UP: -Math.PI * 0.5,
+    UP_RIGHT: -Math.PI * 0.25
+  };
+  ctx.rotate(angles[type] !== undefined ? angles[type] : 0);
+
+  ctx.fillStyle = color;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = Math.max(1.5, r * 0.1);
+  ctx.lineJoin = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(r * 0.72, 0);
+  ctx.lineTo(r * 0.05, -r * 0.58);
+  ctx.lineTo(r * 0.05, -r * 0.24);
+  ctx.lineTo(-r * 0.68, -r * 0.24);
+  ctx.lineTo(-r * 0.68, r * 0.24);
+  ctx.lineTo(r * 0.05, r * 0.24);
+  ctx.lineTo(r * 0.05, r * 0.58);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.restore();
+}
