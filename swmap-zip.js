@@ -1,7 +1,8 @@
 /**
  * swmap-zip.js
  * Автономный модуль чтения и сборки архивов .swmap (ZIP) в браузере без внешних зависимостей,
- * со встроенной скрытой крипто-меткой SwipEdit (в заголовках PKZIP и JSON) и детектором сторонних редакторов.
+ * со встроенной скрытой крипто-меткой SwipEdit (в заголовках PKZIP и JSON) и детектором сторонних редакторов
+ * (Swipetava Maker (dpunov), SWME (KORT3X), Waxai Chart Editor).
  */
 (function (global) {
   'use strict';
@@ -75,139 +76,128 @@
    */
   function inspectMapOrigin(chartObj, metaObj, zipMeta, rawChartText) {
     const expectedTag = computeWatermarkTag(chartObj, metaObj);
-    const chartTag = chartObj && typeof chartObj._se_rev === 'string' ? chartObj._se_rev : '';
-    const metaTag = metaObj && typeof metaObj._se_sig === 'string' ? metaObj._se_sig : '';
+    const chartTag = chartObj && typeof chartObj._se_rev === 'string' ? chartObj._se_rev : null;
+    const metaTag = metaObj && typeof metaObj._se_sig === 'string' ? metaObj._se_sig : null;
     const hasZipExtra = !!(zipMeta && zipMeta.hasSwipEditExtra);
 
-    if (chartTag === expectedTag && (!metaObj || !metaTag || metaTag === expectedTag)) {
+    if (chartTag === expectedTag && (metaTag === expectedTag || hasZipExtra)) {
       return {
         isSwipEdit: true,
         editor: 'SwipEdit',
         label: '🟢 Создано в SwipEdit',
-        detail: hasZipExtra
-          ? 'Подпись SwipEdit (внутри chart.json, meta.json и заголовков ZIP) полностью совпала.'
-          : 'Подпись SwipEdit внутри JSON совпала с содержимым чарта.'
+        detail: `Подлинная карта SwipEdit (скрытая подпись ${expectedTag} совпала с содержимым чарта и заголовком архива).`
       };
     }
 
     if (chartTag || metaTag || hasZipExtra) {
       return {
         isSwipEdit: false,
-        editor: 'Modified External',
-        label: '🔴 Пересохранено в другом редакторе',
-        detail:
-          'В файле остались следы SwipEdit, но ноты или структура были перезаписаны сторонним редактором — возможны перенесённые баги.'
+        editor: 'Modified Externally',
+        label: '🔴 Изменено в чужом редакторе',
+        detail: 'Карта изначально создавалась в SwipEdit, но была пересохранена или изменена в стороннем редакторе (контрольная сумма нот/событий не совпадает).'
       };
     }
 
-    // Эвристика для определения конкретного конкурента
-    const methods = (zipMeta && zipMeta.methods) || {};
-    const versions = (zipMeta && zipMeta.versionsMadeBy) || {};
-    const rawStr = String(rawChartText || '');
+    // Определяем почерк стороннего редактора:
+    // 1) Swipetava Maker (dpunov) — Kotlin/Compose APK:
+    //    - LevelManager.serializeChart() ставит первым ключом "title" ({"title":...), а "events" всегда пустой массив []
+    //    - Java ZipOutputStream пишет DEFLATE (method=8) с потоковым флагом Data Descriptor (flags & 0x08) и versionMadeBy=20
+    //    - дефолтный цвет в meta.json: #6954FF
+    const trimmedChart = typeof rawChartText === 'string' ? rawChartText.trim() : '';
+    const startsWithTitleKey = /^\{\s*"title"\s*:/.test(trimmedChart);
+    const hasJavaStreamDeflate = !!(zipMeta && zipMeta.hasDataDescriptorFlag && zipMeta.chartMethod === 8);
+    const isDpunovDefaultColor = !!(metaObj && String(metaObj.menu_color || '').toUpperCase() === '#6954FF');
+    const hasEmptyEvents = Array.isArray(chartObj && chartObj.events) && chartObj.events.length === 0;
 
-    if (
-      methods['chart.json'] === 8 ||
+    if (startsWithTitleKey || hasJavaStreamDeflate || (isDpunovDefaultColor && hasEmptyEvents)) {
+      return {
+        isSwipEdit: false,
+        editor: 'Swipetava Maker (dpunov)',
+        label: '🔴 Создано в Swipetava Maker',
+        detail: 'Обнаружена сигнатура Swipetava Maker: сериализация org.json с первым ключом "title" / Java ZipOutputStream и сбросом всех событий в "events": [].'
+      };
+    }
+
+    // 2) SWME (KORT3X): сжимает chart.json через JSZip DEFLATE (method=8 без бита 0x08) или пишет coverFile="cover.png" с маленькой буквы
+    const isKort3x =
+      (zipMeta && zipMeta.chartMethod === 8) ||
       (chartObj && chartObj.coverFile === 'cover.png') ||
-      (rawStr.startsWith('{"bpm":') && rawStr.indexOf('"noteTravelTime"') > rawStr.indexOf('"events"'))
-    ) {
+      (typeof rawChartText === 'string' && rawChartText.includes('"formatVersion"'));
+
+    if (isKort3x) {
       return {
         isSwipEdit: false,
         editor: 'SWME (KORT3X)',
         label: '🔴 Создано в другом редакторе (SWME)',
-        detail:
-          'Карта создана в редакторе SWME (JSZip Deflate). Могут быть перенесены ошибки синка, задержки звука или реверсов.'
+        detail: 'В архиве отсутствует скрытая метка SwipEdit; структура ZIP/JSON соответствует редактору SWME (KORT3X). Возможны перенесённые ошибки синка или стаков.'
       };
     }
 
-    if (
-      methods['chart.json'] === 0 &&
-      versions['chart.json'] === 20 &&
-      rawStr.length > 0 &&
-      !rawStr.includes('\n')
-    ) {
+    // 3) Редактор Waxai: однострочный минифицированный chart.json в STORE (method=0) без переносов строк
+    const isSingleLineJson = typeof rawChartText === 'string' && !rawChartText.trim().includes('\n');
+    if (isSingleLineJson) {
       return {
         isSwipEdit: false,
-        editor: 'Waxai Editor',
+        editor: 'Waxai Chart Editor',
         label: '🔴 Создано в другом редакторе (Waxai)',
-        detail:
-          'Карта создана в редакторе от Waxai (STORE без подписи SwipEdit). Могут быть перенесены ошибки из стороннего редактора.'
+        detail: 'В архиве отсутствует скрытая метка SwipEdit; однострочная упаковка chart.json соответствует редактору Waxai.'
       };
     }
 
     return {
       isSwipEdit: false,
-      editor: 'External',
+      editor: 'External / Unknown',
       label: '🔴 Создано в другом редакторе',
-      detail:
-        'Внутри .swmap нет скрытой метки SwipEdit — карта создана в стороннем редакторе, из-за чего могут быть перенесены чужие ошибки.'
+      detail: 'Внутри .swmap не найдена скрытая крипто-метка SwipEdit. Карта собрана в стороннем редакторе или вручную.'
     };
   }
 
-  async function inflateRaw(compressedBytes, uncompressedSize) {
-    if (typeof DecompressionStream === 'undefined') {
-      throw new Error('Браузер не поддерживает DecompressionStream для распаковки DEFLATE');
-    }
-    const ds = new DecompressionStream('deflate-raw');
-    const writer = ds.writable.getWriter();
-    writer.write(compressedBytes);
-    writer.close();
-
-    const reader = ds.readable.getReader();
-    const chunks = [];
-    let total = 0;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      total += value.byteLength;
-    }
-    const out = new Uint8Array(uncompressedSize || total);
-    let offset = 0;
-    for (const chunk of chunks) {
-      out.set(chunk, offset);
-      offset += chunk.byteLength;
-    }
-    return out;
-  }
-
-  async function deflateRaw(rawBytes) {
+  async function deflateRaw(bytes) {
     if (typeof CompressionStream === 'undefined') {
       return null;
     }
     try {
       const cs = new CompressionStream('deflate-raw');
       const writer = cs.writable.getWriter();
-      writer.write(rawBytes);
+      writer.write(bytes);
       writer.close();
-
-      const reader = cs.readable.getReader();
-      const chunks = [];
-      let total = 0;
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
-        total += value.byteLength;
-      }
-      const out = new Uint8Array(total);
-      let offset = 0;
-      for (const chunk of chunks) {
-        out.set(chunk, offset);
-        offset += chunk.byteLength;
-      }
-      return out;
+      const buf = await new Response(cs.readable).arrayBuffer();
+      return new Uint8Array(buf);
     } catch (_) {
       return null;
     }
   }
 
+  async function inflateRaw(bytes) {
+    if (typeof DecompressionStream === 'undefined') {
+      throw new Error('Браузер не поддерживает DecompressionStream (deflate-raw)');
+    }
+    const ds = new DecompressionStream('deflate-raw');
+    const writer = ds.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+    const buf = await new Response(ds.readable).arrayBuffer();
+    return new Uint8Array(buf);
+  }
+
   /**
-   * Читает архив .swmap (ZIP) из ArrayBuffer или Uint8Array.
-   * Возвращает { files, methods, zipMeta }
+   * Читает .swmap (ZIP) архив из ArrayBuffer / Uint8Array / File / Blob.
+   * Возвращает { files: { [filename]: Uint8Array }, zipMeta }.
    */
-  async function readSwmapArchive(buffer) {
-    const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  async function readSwmapZip(input) {
+    let buffer;
+    if (input instanceof ArrayBuffer) {
+      buffer = input;
+    } else if (ArrayBuffer.isView(input)) {
+      buffer = input.buffer.slice(input.byteOffset, input.byteOffset + input.byteLength);
+    } else if (input && typeof input.arrayBuffer === 'function') {
+      buffer = await input.arrayBuffer();
+    } else {
+      throw new Error('Неподдерживаемый источник данных для .swmap');
+    }
+
+    const bytes = new Uint8Array(buffer);
+    const view = new DataView(buffer);
 
     let eocdOffset = -1;
     const minEocdOffset = Math.max(0, bytes.length - 65557);
@@ -217,247 +207,234 @@
         break;
       }
     }
-
     if (eocdOffset === -1) {
-      throw new Error('Файл не является корректным ZIP / .swmap архивом (не найден EOCD)');
+      throw new Error('Файл не является корректным .swmap (ZIP) архивом');
     }
 
     const totalEntries = view.getUint16(eocdOffset + 10, true);
+    const cdSize = view.getUint32(eocdOffset + 12, true);
     const cdOffset = view.getUint32(eocdOffset + 16, true);
 
     const files = {};
-    const methods = {};
-    const versionsMadeBy = {};
-    const entryOrder = [];
-    let hasSwipEditExtra = false;
-    let ptr = cdOffset;
+    const zipMeta = {
+      hasSwipEditExtra: false,
+      chartMethod: 0,
+      versionMadeBy: 0,
+      hasDataDescriptorFlag: false,
+      entries: []
+    };
 
-    for (let i = 0; i < totalEntries; i++) {
-      if (view.getUint32(ptr, true) !== 0x02014b50) {
-        throw new Error('Поврежден заголовок Central Directory в .swmap');
+    let ptr = cdOffset;
+    const cdEnd = cdOffset + cdSize;
+
+    for (let i = 0; i < totalEntries && ptr < cdEnd; i++) {
+      const sig = view.getUint32(ptr, true);
+      if (sig !== 0x02014b50) {
+        throw new Error('Повреждён заголовок Central Directory в .swmap');
       }
-      const versionMadeBy = view.getUint16(ptr + 4, true);
+      const verMadeBy = view.getUint16(ptr + 4, true);
+      const flags = view.getUint16(ptr + 8, true);
       const method = view.getUint16(ptr + 10, true);
       const compSize = view.getUint32(ptr + 20, true);
-      const uncompSize = view.getUint32(ptr + 24, true);
       const nameLen = view.getUint16(ptr + 28, true);
       const extraLen = view.getUint16(ptr + 30, true);
       const commentLen = view.getUint16(ptr + 32, true);
       const localHeaderOffset = view.getUint32(ptr + 42, true);
 
       const nameBytes = bytes.subarray(ptr + 46, ptr + 46 + nameLen);
-      const fileName = textDecoder.decode(nameBytes);
+      const name = textDecoder.decode(nameBytes);
 
-      // Проверяем скрытое extra-поле 0x5753 ('SW') в Central Directory
-      if (extraLen >= 12) {
+      if ((flags & 0x08) !== 0) {
+        zipMeta.hasDataDescriptorFlag = true;
+      }
+
+      if (extraLen >= 8) {
         const extraStart = ptr + 46 + nameLen;
-        const extraId = view.getUint16(extraStart, true);
-        const extraDataLen = view.getUint16(extraStart + 2, true);
-        if (extraId === 0x5753 && extraDataLen === 8) {
-          const sig0 = view.getUint32(extraStart + 4, true);
-          if (sig0 === 0x21324553) { // 'SE2!'
-            hasSwipEditExtra = true;
+        const extraEnd = extraStart + extraLen;
+        let ep = extraStart;
+        while (ep + 4 <= extraEnd) {
+          const headerId = view.getUint16(ep, true);
+          const dataSize = view.getUint16(ep + 2, true);
+          if (headerId === 0x5753 && dataSize >= 4 && ep + 8 <= extraEnd) {
+            const magic = view.getUint32(ep + 4, true);
+            if (magic === 0x21324553) {
+              zipMeta.hasSwipEditExtra = true;
+            }
           }
+          ep += 4 + dataSize;
         }
       }
 
+      if (name === 'chart.json') {
+        zipMeta.chartMethod = method;
+        zipMeta.versionMadeBy = verMadeBy;
+        if (verMadeBy === 0x033F) {
+          zipMeta.hasSwipEditExtra = true;
+        }
+      }
+      zipMeta.entries.push({ name, method, verMadeBy, flags });
+
       ptr += 46 + nameLen + extraLen + commentLen;
 
-      if (fileName.endsWith('/')) continue;
+      if (name.endsWith('/')) continue;
 
       if (view.getUint32(localHeaderOffset, true) !== 0x04034b50) {
-        throw new Error(`Поврежден Local File Header для ${fileName}`);
+        throw new Error(`Повреждён Local File Header для ${name}`);
       }
       const localNameLen = view.getUint16(localHeaderOffset + 26, true);
       const localExtraLen = view.getUint16(localHeaderOffset + 28, true);
       const dataStart = localHeaderOffset + 30 + localNameLen + localExtraLen;
-      const rawSlice = bytes.subarray(dataStart, dataStart + compSize);
+      const compData = bytes.subarray(dataStart, dataStart + compSize);
 
       if (method === 0) {
-        files[fileName] = new Uint8Array(rawSlice);
+        files[name] = new Uint8Array(compData);
       } else if (method === 8) {
-        files[fileName] = await inflateRaw(rawSlice, uncompSize);
+        files[name] = await inflateRaw(compData);
       } else {
-        throw new Error(`Неподдерживаемый метод сжатия ZIP (${method}) в файле ${fileName}`);
+        throw new Error(`Неподдерживаемый метод сжатия ZIP (${method}) в файле ${name}`);
       }
-      methods[fileName] = method;
-      versionsMadeBy[fileName] = versionMadeBy;
-      entryOrder.push(fileName);
     }
 
-    return {
-      files,
-      methods,
-      zipMeta: {
-        methods,
-        versionsMadeBy,
-        entryOrder,
-        hasSwipEditExtra
-      }
-    };
+    return { files, zipMeta };
   }
 
   /**
-   * Собирает архив .swmap (ZIP) со скрытой PKZIP-меткой SwipEdit в Central Directory.
+   * Собирает .swmap (ZIP) архив со скрытым PKZIP Extra Field (0x5753 'SW' -> 'SE2!').
    */
-  async function writeSwmapArchive(entries) {
-    const localParts = [];
-    const centralParts = [];
-    let offset = 0;
+  async function writeSwmapZip(entries) {
+    const prepared = [];
+    let totalLocalSize = 0;
+    let totalCdSize = 0;
 
-    const now = new Date();
-    const dosTime =
-      ((now.getHours() & 0x1F) << 11) |
-      ((now.getMinutes() & 0x3F) << 5) |
-      ((now.getSeconds() >> 1) & 0x1F);
-    const dosDate =
-      (((now.getFullYear() - 1980) & 0x7F) << 9) |
-      (((now.getMonth() + 1) & 0x0F) << 5) |
-      (now.getDate() & 0x1F);
+    // Скрытое 12-байтное расширение PKZIP Extra Field: HeaderID=0x5753 ('SW'), DataSize=8, Magic='SE2!' (0x21324553)
+    const swExtra = new Uint8Array(12);
+    const swExtraView = new DataView(swExtra.buffer);
+    swExtraView.setUint16(0, 0x5753, true);
+    swExtraView.setUint16(2, 8, true);
+    swExtraView.setUint32(4, 0x21324553, true);
 
-    for (const entry of entries) {
-      const nameBytes = textEncoder.encode(entry.name);
-      const rawData =
-        typeof entry.data === 'string'
-          ? textEncoder.encode(entry.data)
-          : entry.data instanceof Uint8Array
-          ? entry.data
-          : new Uint8Array(entry.data);
+    for (const item of entries) {
+      const nameBytes = textEncoder.encode(item.name);
+      let rawBytes;
+      if (typeof item.data === 'string') {
+        rawBytes = textEncoder.encode(item.data);
+      } else if (item.data instanceof Uint8Array) {
+        rawBytes = item.data;
+      } else if (item.data instanceof ArrayBuffer) {
+        rawBytes = new Uint8Array(item.data);
+      } else {
+        throw new Error(`Некорректные данные для файла ${item.name}`);
+      }
 
-      const crc = crc32(rawData);
+      const crc = crc32(rawBytes);
       let method = 0;
-      let storedData = rawData;
+      let compBytes = rawBytes;
 
-      if (entry.compress) {
-        const deflated = await deflateRaw(rawData);
-        if (deflated && deflated.byteLength < rawData.byteLength) {
+      if (item.compress) {
+        const deflated = await deflateRaw(rawBytes);
+        if (deflated && deflated.length < rawBytes.length) {
           method = 8;
-          storedData = deflated;
+          compBytes = deflated;
         }
       }
 
-      // Для chart.json и meta.json встраиваем 12-байтное PKZIP Extra Field (0x5753 = 'SW')
-      const isSignedJson = entry.name === 'chart.json' || entry.name === 'meta.json';
-      const extraBytes = isSignedJson ? new Uint8Array(12) : new Uint8Array(0);
-      if (isSignedJson) {
-        const exView = new DataView(extraBytes.buffer);
-        exView.setUint16(0, 0x5753, true); // 'SW'
-        exView.setUint16(2, 8, true);      // 8 bytes payload
-        exView.setUint32(4, 0x21324553, true); // 'SE2!'
-        exView.setUint32(8, (crc ^ 0x53574544) >>> 0, true);
-      }
+      const isJsonMeta = item.name === 'chart.json' || item.name === 'meta.json';
+      const cdExtraLen = isJsonMeta ? swExtra.length : 0;
+      const entryCrc = crc;
 
-      const localHeader = new Uint8Array(30 + nameBytes.length + extraBytes.length);
-      const lhView = new DataView(localHeader.buffer);
-      lhView.setUint32(0, 0x04034b50, true);
-      lhView.setUint16(4, 20, true);
-      lhView.setUint16(6, 0x0800, true); // UTF-8
-      lhView.setUint16(8, method, true);
-      lhView.setUint16(10, dosTime, true);
-      lhView.setUint16(12, dosDate, true);
-      lhView.setUint32(14, crc, true);
-      lhView.setUint32(18, storedData.byteLength, true);
-      lhView.setUint32(22, rawData.byteLength, true);
-      lhView.setUint16(26, nameBytes.length, true);
-      lhView.setUint16(28, extraBytes.length, true);
-      localHeader.set(nameBytes, 30);
-      if (extraBytes.length) localHeader.set(extraBytes, 30 + nameBytes.length);
+      prepared.push({
+        nameBytes,
+        rawLen: rawBytes.length,
+        compBytes,
+        compLen: compBytes.length,
+        method,
+        crc: entryCrc,
+        offset: totalLocalSize,
+        isJsonMeta,
+        cdExtraLen
+      });
 
-      const centralHeader = new Uint8Array(46 + nameBytes.length + extraBytes.length);
-      const chView = new DataView(centralHeader.buffer);
-      chView.setUint32(0, 0x02014b50, true);
-      chView.setUint16(4, 0x033F, true); // SwipEdit versionMadeBy marker
-      chView.setUint16(6, 20, true);
-      chView.setUint16(8, 0x0800, true); // UTF-8
-      chView.setUint16(10, method, true);
-      chView.setUint16(12, dosTime, true);
-      chView.setUint16(14, dosDate, true);
-      chView.setUint32(16, crc, true);
-      chView.setUint32(20, storedData.byteLength, true);
-      chView.setUint32(24, rawData.byteLength, true);
-      chView.setUint16(28, nameBytes.length, true);
-      chView.setUint16(30, extraBytes.length, true);
-      chView.setUint16(32, 0, true);
-      chView.setUint16(34, 0, true);
-      chView.setUint16(36, 0, true);
-      chView.setUint32(38, 0, true);
-      chView.setUint32(42, offset, true);
-      centralHeader.set(nameBytes, 46);
-      if (extraBytes.length) centralHeader.set(extraBytes, 46 + nameBytes.length);
-
-      localParts.push(localHeader, storedData);
-      centralParts.push(centralHeader);
-      offset += localHeader.byteLength + storedData.byteLength;
+      totalLocalSize += 30 + nameBytes.length + compBytes.length;
+      totalCdSize += 46 + nameBytes.length + cdExtraLen;
     }
 
-    let cdSize = 0;
-    for (const part of centralParts) cdSize += part.byteLength;
+    const totalSize = totalLocalSize + totalCdSize + 22;
+    const out = new Uint8Array(totalSize);
+    const view = new DataView(out.buffer);
 
-    const eocd = new Uint8Array(22);
-    const eocdView = new DataView(eocd.buffer);
-    eocdView.setUint32(0, 0x06054b50, true);
-    eocdView.setUint16(4, 0, true);
-    eocdView.setUint16(6, 0, true);
-    eocdView.setUint16(8, entries.length, true);
-    eocdView.setUint16(10, entries.length, true);
-    eocdView.setUint32(12, cdSize, true);
-    eocdView.setUint32(16, offset, true);
-    eocdView.setUint16(20, 0, true);
+    let pos = 0;
+    for (const p of prepared) {
+      view.setUint32(pos, 0x04034b50, true);
+      view.setUint16(pos + 4, 20, true);
+      view.setUint16(pos + 6, 0x0800, true);
+      view.setUint16(pos + 8, p.method, true);
+      view.setUint16(pos + 10, 0, true);
+      view.setUint16(pos + 12, 0x554b, true);
+      view.setUint32(pos + 14, p.crc, true);
+      view.setUint32(pos + 18, p.compLen, true);
+      view.setUint32(pos + 22, p.rawLen, true);
+      view.setUint16(pos + 26, p.nameBytes.length, true);
+      view.setUint16(pos + 28, 0, true);
+      out.set(p.nameBytes, pos + 30);
+      out.set(p.compBytes, pos + 30 + p.nameBytes.length);
+      pos += 30 + p.nameBytes.length + p.compLen;
+    }
 
-    return new Blob([...localParts, ...centralParts, eocd], {
-      type: 'application/octet-stream'
-    });
+    const cdStart = pos;
+    for (const p of prepared) {
+      view.setUint32(pos, 0x02014b50, true);
+      view.setUint16(pos + 4, p.isJsonMeta ? 0x033F : 20, true);
+      view.setUint16(pos + 6, 20, true);
+      view.setUint16(pos + 8, 0x0800, true);
+      view.setUint16(pos + 10, p.method, true);
+      view.setUint16(pos + 12, 0, true);
+      view.setUint16(pos + 14, 0x554b, true);
+      view.setUint32(pos + 16, p.crc, true);
+      view.setUint32(pos + 20, p.compLen, true);
+      view.setUint32(pos + 24, p.rawLen, true);
+      view.setUint16(pos + 28, p.nameBytes.length, true);
+      view.setUint16(pos + 30, p.cdExtraLen, true);
+      view.setUint16(pos + 32, 0, true);
+      view.setUint16(pos + 34, 0, true);
+      view.setUint16(pos + 36, 0, true);
+      view.setUint32(pos + 38, 0, true);
+      view.setUint32(pos + 42, p.offset, true);
+      out.set(p.nameBytes, pos + 46);
+      if (p.isJsonMeta) {
+        swExtraView.setUint32(8, p.crc ^ 0x53574544, true);
+        out.set(swExtra, pos + 46 + p.nameBytes.length);
+      }
+      pos += 46 + p.nameBytes.length + p.cdExtraLen;
+    }
+
+    const cdSize = pos - cdStart;
+    view.setUint32(pos, 0x06054b50, true);
+    view.setUint16(pos + 4, 0, true);
+    view.setUint16(pos + 6, 0, true);
+    view.setUint16(pos + 8, prepared.length, true);
+    view.setUint16(pos + 10, prepared.length, true);
+    view.setUint32(pos + 12, cdSize, true);
+    view.setUint32(pos + 16, cdStart, true);
+    view.setUint16(pos + 20, 0, true);
+
+    return out;
   }
 
-  async function readSwmapZip(input) {
-    let buf;
-    if (input instanceof ArrayBuffer || input instanceof Uint8Array) {
-      buf = input;
-    } else if (input && typeof input.arrayBuffer === 'function') {
-      buf = await input.arrayBuffer();
-    } else {
-      throw new Error('Неподдерживаемый источник для readSwmapZip');
-    }
-    return readSwmapArchive(buf);
+  function decodeText(bytes) {
+    return textDecoder.decode(bytes);
   }
 
-  async function writeSwmapZip(filesMap, compressMap) {
-    if (Array.isArray(filesMap)) {
-      return writeSwmapArchive(filesMap);
-    }
-    const cMap = compressMap || {};
-    const orderedKeys = ['Cover.png', 'bg.png', 'chart.json', 'meta.json', 'track.ogg'];
-    const allKeys = Object.keys(filesMap);
-    const sortedKeys = [];
-
-    for (const k of orderedKeys) {
-      if (Object.prototype.hasOwnProperty.call(filesMap, k)) {
-        sortedKeys.push(k);
-      }
-    }
-    for (const k of allKeys) {
-      if (!sortedKeys.includes(k)) {
-        sortedKeys.push(k);
-      }
-    }
-
-    const entries = sortedKeys.map((name) => ({
-      name,
-      data: filesMap[name],
-      compress: Boolean(cMap[name])
-    }));
-    return writeSwmapArchive(entries);
+  function encodeText(str) {
+    return textEncoder.encode(str);
   }
 
   global.SwmapZip = {
-    readSwmapArchive,
-    writeSwmapArchive,
     readSwmapZip,
     writeSwmapZip,
+    decodeText,
+    encodeText,
+    crc32,
     computeWatermarkTag,
-    inspectMapOrigin,
-    encodeText: (str) => textEncoder.encode(str),
-    decodeText: (bytes) => textDecoder.decode(bytes),
-    crc32
+    inspectMapOrigin
   };
-})(window);
+})(typeof window !== 'undefined' ? window : globalThis);
