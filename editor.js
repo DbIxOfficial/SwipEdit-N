@@ -427,14 +427,9 @@
       bgBytes: null,
       extraFiles: {} // прочие файлы из архива, если были
     },
-    // Объекты для предпросмотра (включая .ogv видео-фоны без перекодирования)
+    // Объекты для предпросмотра
     coverImage: null,
     bgImage: null,
-    bgVideoEl: null,
-    bgVideoUrl: null,
-    bgVideoReady: false,
-    bgIsVideo: false,
-    videoBgPreviewEnabled: true,
     // Аудио и воспроизведение
     audioCtx: null,
     audioBuffer: null,
@@ -471,13 +466,7 @@
     onsetEnv: null,                // Огибающая аудио-волны для привязки к удару (Onset)
     onsetSr: 200,
     lastStats: null,               // Кеш расчёта NPS и баллов сложности (SDP)
-    timeSigNum: 4,                 // Числитель тактового размера метронома (например 3, 4, 5, 6, 11)
-    timeSigDen: 4,                 // Знаменатель тактового размера метронома (2, 4, 8, 16)
-    selectedItem: null,            // { kind: 'note' | 'event', item: obj }
-    selectedNotes: new Set(),      // Множественное выделение нот на таймлайне
-    selectedEvents: new Set(),     // Множественное выделение ивентов на таймлайне
-    marqueeRect: null,             // Рамка выделения { x0, y0, x1, y1 }
-    dragGroupInitial: null,        // Снимок времён выделенной группы при перетаскивании
+    selectedItem: null, // { kind: 'note' | 'event', item: obj }
     draggingItem: null,
     isScrubbing: false,
     // Стек Undo / Redo
@@ -1016,19 +1005,8 @@
     ctx.rotate(rot);
     ctx.translate(-W / 2 + offX, -H / 2 + offY);
 
-    // 1. Фон карты (Видео-фон .ogv / превью-видео, картинка или градиент)
-    if (state.videoBgPreviewEnabled && state.bgVideoEl && state.bgVideoReady && state.bgVideoEl.readyState >= 2) {
-      const vw = state.bgVideoEl.videoWidth || W;
-      const vh = state.bgVideoEl.videoHeight || H;
-      const r = Math.max(W / vw, H / vh);
-      const dw = vw * r;
-      const dh = vh * r;
-      try {
-        ctx.drawImage(state.bgVideoEl, (W - dw) / 2, (H - dh) / 2, dw, dh);
-      } catch (_) {}
-      ctx.fillStyle = 'rgba(7, 10, 21, 0.36)';
-      ctx.fillRect(0, 0, W, H);
-    } else if (state.bgImage) {
+    // 1. Фон карты
+    if (state.bgImage) {
       const iw = state.bgImage.width || W;
       const ih = state.bgImage.height || H;
       const r = Math.max(W / iw, H / ih);
@@ -1429,10 +1407,6 @@
   }
 
   // --- Отрисовка многодорожечного таймлайна (10-рядный Пиано-ролл + компактный режим) ---
-  function getTimelineLabelWidth(canvasW) {
-    return (canvasW && canvasW < 540) ? 92 : 118;
-  }
-
   function getTimelineTrackLayout(H) {
     const isPiano = state.timelineViewMode === 'pianoroll';
     if (isPiano) {
@@ -1440,10 +1414,10 @@
       const waveTop = 24;
       const waveBottom = 56;
       const notesTop = 56;
-      const notesHeight = Math.max(220, H - 56 - 76);
+      const notesHeight = Math.max(150, H - 56 - 78);
       const notesBottom = notesTop + notesHeight;
       const textSpeedTop = notesBottom;
-      const textSpeedBottom = notesBottom + 36;
+      const textSpeedBottom = notesBottom + 38;
       const fxTop = textSpeedBottom;
       const fxBottom = H;
       const laneH = notesHeight / NOTE_TYPES.length;
@@ -1467,11 +1441,11 @@
       waveTop: 26,
       waveBottom: 74,
       notesTop: 74,
-      notesBottom: 142,
-      laneH: 68,
-      textSpeedTop: 142,
-      textSpeedBottom: 188,
-      fxTop: 188,
+      notesBottom: 136,
+      laneH: 62,
+      textSpeedTop: 136,
+      textSpeedBottom: 184,
+      fxTop: 184,
       fxBottom: H
     };
   }
@@ -1484,43 +1458,17 @@
     return Math.max(0, (x - labelWidth + state.timelineScrollX) / state.zoomPxPerSec);
   }
 
-  function updateMultiSelectBarUI() {
-    const bar = document.getElementById('multi-select-bar');
-    const cntEl = document.getElementById('multi-select-count');
-    if (!bar || !cntEl) return;
-    const nCnt = state.selectedNotes ? state.selectedNotes.size : 0;
-    const eCnt = state.selectedEvents ? state.selectedEvents.size : 0;
-    const total = nCnt + eCnt;
-    if (total > 0 || state.timelineTouchMode === 'select') {
-      bar.style.display = 'flex';
-      cntEl.textContent = `Выделено: ${nCnt} нот, ${eCnt} событий`;
-    } else {
-      bar.style.display = 'none';
-    }
-  }
-
   function renderTimelineCanvas() {
     const canvas = document.getElementById('timeline-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-
-    const wrap = canvas.parentElement;
-    const cssW = Math.max(320, Math.round((wrap && wrap.clientWidth) || canvas.clientWidth || 360));
-    const desiredH = state.timelineViewMode === 'pianoroll' ? 356 : 236;
-
-    if (canvas.style.height !== `${desiredH}px`) {
-      canvas.style.height = `${desiredH}px`;
-    }
-    if (canvas.width !== cssW) {
-      canvas.width = cssW;
-    }
+    const desiredH = state.timelineViewMode === 'pianoroll' ? 316 : 230;
     if (canvas.height !== desiredH) {
       canvas.height = desiredH;
     }
-
     const W = canvas.width;
     const H = canvas.height;
-    const labelW = getTimelineLabelWidth(W);
+    const labelW = 118;
     const layout = getTimelineTrackLayout(H);
 
     ctx.clearRect(0, 0, W, H);
@@ -1546,7 +1494,7 @@
           ctx.fillStyle = 'rgba(56, 189, 248, 0.07)';
           ctx.fillRect(labelW, ry, W - labelW, layout.laneH);
         }
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.11)';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(labelW, ry);
@@ -1561,19 +1509,16 @@
     ctx.fillStyle = '#0a0f1c';
     ctx.fillRect(labelW, layout.fxTop, W - labelW, layout.fxBottom - layout.fxTop);
 
-    // 1. Сетка BPM и линейка времени (с учётом выбранного тактового размера N/M)
+    // 1. Сетка BPM и линейка времени
     const startSec = Math.max(0, xToTime(labelW, labelW));
     const endSec = xToTime(W, labelW);
     const tp = getActiveTimingAt(startSec);
-    const quarterSec = 60 / tp.bpm;
-    const tsNum = Math.max(1, Number(state.timeSigNum) || 4);
-    const tsDen = Math.max(1, Number(state.timeSigDen) || 4);
-    const sigBeatSec = quarterSec * (4 / tsDen);
-    const subDiv = (state.snapDivisor && state.snapDivisor > 0) ? Math.max(1, state.snapDivisor / tsDen) : 1;
-    const stepSec = sigBeatSec / subDiv;
+    const beatSec = 60 / tp.bpm;
+    const subDiv = (state.snapDivisor && state.snapDivisor > 0) ? (state.snapDivisor / 4) : 1;
+    const stepSec = beatSec / subDiv;
 
     const firstStepIdx = Math.floor((startSec - tp.time) / stepSec);
-    const maxLines = 650;
+    const maxLines = 600;
     let lineCount = 0;
 
     for (let idx = firstStepIdx; lineCount < maxLines; idx++, lineCount++) {
@@ -1584,17 +1529,15 @@
       const x = timeToX(t, labelW);
       if (x < labelW) continue;
 
-      const stepsPerBar = Math.max(1, Math.round(tsNum * subDiv));
-      const stepsPerBeat = Math.max(1, Math.round(subDiv));
-      const isBar = ((idx % stepsPerBar) + stepsPerBar) % stepsPerBar === 0;
-      const isBeat = ((idx % stepsPerBeat) + stepsPerBeat) % stepsPerBeat === 0;
+      const isBar = idx % (4 * subDiv) === 0;
+      const isBeat = idx % subDiv === 0;
 
       ctx.beginPath();
       ctx.moveTo(x, layout.rulerBottom);
       ctx.lineTo(x, H);
       if (isBar) {
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.36)';
-        ctx.lineWidth = 1.3;
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.32)';
+        ctx.lineWidth = 1.2;
       } else if (isBeat) {
         ctx.strokeStyle = 'rgba(148, 163, 184, 0.16)';
         ctx.lineWidth = 1;
@@ -1604,12 +1547,10 @@
       }
       ctx.stroke();
 
-      if (isBar || (isBeat && state.zoomPxPerSec >= 150)) {
-        const barNum = Math.floor(idx / stepsPerBar) + 1;
+      if (isBar || (isBeat && state.zoomPxPerSec >= 140)) {
         ctx.fillStyle = isBar ? '#e2e8f0' : '#64748b';
         ctx.font = isBar ? '700 10px ui-monospace, monospace' : '500 9px ui-monospace, monospace';
-        const txt = isBar ? `Т${barNum} (${t.toFixed(2)}s)` : `${t.toFixed(2)}s`;
-        ctx.fillText(txt, x + 3, 16);
+        ctx.fillText(`${t.toFixed(2)}s`, x + 3, 16);
       }
     }
 
@@ -1658,41 +1599,25 @@
         }
         for (let k = gIdx; k < gj; k++) {
           const n = notes[k];
-          const isSingleSel = state.selectedItem && state.selectedItem.kind === 'note' && state.selectedItem.item === n;
-          const isMultiSel = state.selectedNotes && state.selectedNotes.has(n);
-          const isSel = isSingleSel || isMultiSel;
-
+          const isSel = state.selectedItem && state.selectedItem.kind === 'note' && state.selectedItem.item === n;
           let ny = notesMidY;
           let rad = 14;
           if (layout.isPiano) {
             const rowIdx = Math.max(0, NOTE_TYPES.findIndex(nt => nt.id === n.type));
             ny = layout.notesTop + (rowIdx + 0.5) * layout.laneH;
-            rad = Math.min(11.5, layout.laneH * 0.45);
+            rad = Math.min(10.5, layout.laneH * 0.44);
           } else {
             const slotOffset = gSize > 1 ? ((k - gIdx) - (gSize - 1) / 2) * 16 : 0;
             ny = notesMidY + slotOffset;
-            rad = gSize > 1 ? 11 : 14;
+            rad = gSize > 1 ? 11.5 : 14;
           }
-
-          if (isSel) {
-            ctx.save();
-            ctx.strokeStyle = isMultiSel ? '#38bdf8' : '#fde047';
-            ctx.fillStyle = isMultiSel ? 'rgba(56, 189, 248, 0.22)' : 'rgba(253, 224, 71, 0.18)';
-            ctx.lineWidth = 2.4;
-            ctx.beginPath();
-            ctx.arc(gx, ny, rad + 4, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            ctx.restore();
-          }
-
-          drawArrowShape(ctx, gx, ny, rad, n.type, isSel);
+          drawSwipeNote(ctx, gx, ny, rad, n.type, 1, isSel);
         }
       }
       gIdx = gj;
     }
 
-    // 4. Отрисовка событий (TEXT / NOTE_SPEED и FX / Камера)
+    // 4. Отрисовка событий (TEXT / NOTE_SPEED и FX / Модификаторы)
     const events = state.chart.events;
     for (let i = 0; i < events.length; i++) {
       const ev = events[i];
@@ -1712,14 +1637,12 @@
       const pillH = Math.min(20, (bandH - 8) / 2);
       const py = bandTop + 4 + laneIdx * (pillH + 3);
 
-      const isSingleSel = state.selectedItem && state.selectedItem.kind === 'event' && state.selectedItem.item === ev;
-      const isMultiSel = state.selectedEvents && state.selectedEvents.has(ev);
-      const isSel = isSingleSel || isMultiSel;
+      const isSel = state.selectedItem && state.selectedItem.kind === 'event' && state.selectedItem.item === ev;
 
       ctx.save();
       ctx.fillStyle = def.color + (dur > 0 ? '44' : '88');
-      ctx.strokeStyle = isMultiSel ? '#38bdf8' : (isSel ? '#fde047' : def.color);
-      ctx.lineWidth = isSel ? 2.4 : 1.2;
+      ctx.strokeStyle = isSel ? '#fde047' : def.color;
+      ctx.lineWidth = isSel ? 2.2 : 1.2;
 
       ctx.beginPath();
       ctx.roundRect(x, py, wPx, pillH, 4);
@@ -1742,22 +1665,6 @@
       ctx.restore();
     }
 
-    // 4.5 Рамка множественного выделения (Marquee box)
-    if (state.marqueeRect) {
-      const rx = Math.min(state.marqueeRect.x0, state.marqueeRect.x1);
-      const ry = Math.min(state.marqueeRect.y0, state.marqueeRect.y1);
-      const rw = Math.abs(state.marqueeRect.x1 - state.marqueeRect.x0);
-      const rh = Math.abs(state.marqueeRect.y1 - state.marqueeRect.y0);
-      ctx.save();
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.16)';
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([5, 3]);
-      ctx.fillRect(rx, ry, rw, rh);
-      ctx.strokeRect(rx, ry, rw, rh);
-      ctx.restore();
-    }
-
     // 5. Разделители дорожек и левая панель заголовков
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, labelW, H);
@@ -1776,40 +1683,33 @@
     ctx.lineTo(labelW, H);
     ctx.stroke();
 
-    const compactLabels = labelW < 105;
     ctx.fillStyle = '#94a3b8';
-    ctx.font = compactLabels ? '700 9.5px system-ui, sans-serif' : '700 11px system-ui, sans-serif';
-    ctx.fillText(compactLabels ? `ТАКТ (${state.timeSigNum}/${state.timeSigDen})` : `ТАКТЫ (${state.timeSigNum}/${state.timeSigDen})`, 6, 16);
+    ctx.font = '700 11px system-ui, sans-serif';
+    ctx.fillText('ТАКТЫ / СЕК', 10, 16);
     ctx.fillStyle = '#38bdf8';
-    ctx.fillText(compactLabels ? 'ВОЛНА' : 'АУДИО ВОЛНА', 6, (layout.waveTop + layout.waveBottom) / 2 + 4);
+    ctx.fillText('АУДИО ВОЛНА', 10, (layout.waveTop + layout.waveBottom) / 2 + 4);
 
     if (layout.isPiano) {
-      const shortNames = {
-        UP: 'UP', DOWN: 'DOWN', LEFT: 'LEFT', RIGHT: 'RIGHT',
-        UP_LEFT: 'UP_L', UP_RIGHT: 'UP_R', DOWN_LEFT: 'DN_L', DOWN_RIGHT: 'DN_R',
-        REVERSE: 'REV', REVERSE_BACK: 'REV_B'
-      };
       for (let r = 0; r < NOTE_TYPES.length; r++) {
         const nt = NOTE_TYPES[r];
         const ry = layout.notesTop + r * layout.laneH;
         ctx.fillStyle = nt.id === state.activeNoteType ? 'rgba(56, 189, 248, 0.16)' : 'transparent';
         ctx.fillRect(0, ry, labelW - 1, layout.laneH);
         ctx.fillStyle = nt.color;
-        ctx.font = compactLabels ? '700 9.5px ui-monospace, monospace' : '700 10px ui-monospace, monospace';
-        const lbl = compactLabels ? `${nt.short} ${shortNames[nt.id] || nt.id}` : `${nt.short} ${nt.id}`;
-        ctx.fillText(lbl, 6, ry + layout.laneH / 2 + 3.5);
+        ctx.font = '700 10px ui-monospace, monospace';
+        ctx.fillText(`${nt.short} ${nt.id}`, 8, ry + layout.laneH / 2 + 3.5);
       }
     } else {
       ctx.fillStyle = '#f43f5e';
-      ctx.font = compactLabels ? '700 9.5px system-ui, sans-serif' : '700 11px system-ui, sans-serif';
-      ctx.fillText(compactLabels ? 'НОТЫ' : 'НОТЫ / СТАКИ', 6, (layout.notesTop + layout.notesBottom) / 2 + 4);
+      ctx.font = '700 11px system-ui, sans-serif';
+      ctx.fillText('НОТЫ / СТАКИ', 10, (layout.notesTop + layout.notesBottom) / 2 + 4);
     }
 
     ctx.fillStyle = '#facc15';
-    ctx.font = compactLabels ? '700 9.5px system-ui, sans-serif' : '700 11px system-ui, sans-serif';
-    ctx.fillText('TEXT / SPEED', 6, (layout.textSpeedTop + layout.textSpeedBottom) / 2 + 4);
+    ctx.font = '700 11px system-ui, sans-serif';
+    ctx.fillText('TEXT / SPEED', 10, (layout.textSpeedTop + layout.textSpeedBottom) / 2 + 4);
     ctx.fillStyle = '#a855f7';
-    ctx.fillText('FX / КАМЕРА', 6, (layout.fxTop + layout.fxBottom) / 2 + 4);
+    ctx.fillText('FX / КАМЕРА', 10, (layout.fxTop + layout.fxBottom) / 2 + 4);
 
     // 6. Красный курсор текущей позиции (Playhead)
     const playheadX = timeToX(state.currentTime, labelW);
@@ -1831,8 +1731,6 @@
       ctx.fill();
       ctx.restore();
     }
-
-    updateMultiSelectBarUI();
   }
 
   function hashCode(str) {
@@ -1848,7 +1746,7 @@
   function hitTestTimeline(mx, my) {
     const canvas = document.getElementById('timeline-canvas');
     if (!canvas) return null;
-    const labelW = getTimelineLabelWidth(canvas.width);
+    const labelW = 118;
     const layout = getTimelineTrackLayout(canvas.height);
 
     if (mx < labelW) {
@@ -2046,31 +1944,8 @@
   }
 
   function deleteSelectedItem() {
-    const hasMulti = (state.selectedNotes && state.selectedNotes.size > 0) || (state.selectedEvents && state.selectedEvents.size > 0);
-    if (!hasMulti && !state.selectedItem) return;
+    if (!state.selectedItem) return;
     pushUndo();
-
-    if (hasMulti) {
-      const revTimesToClean = [];
-      for (const n of state.selectedNotes) {
-        if (n.type === 'REVERSE' || n.type === 'REVERSE_BACK') {
-          revTimesToClean.push({ time: n.time, type: n.type });
-        }
-      }
-      state.chart.notes = state.chart.notes.filter(n => !state.selectedNotes.has(n));
-      state.chart.events = state.chart.events.filter(ev => !state.selectedEvents.has(ev));
-      for (const r of revTimesToClean) {
-        syncReverseFlowEvent(r.time, null, r.type, true);
-      }
-      const delCount = state.selectedNotes.size + state.selectedEvents.size;
-      state.selectedNotes.clear();
-      state.selectedEvents.clear();
-      state.selectedItem = null;
-      refreshAllViews();
-      setStatus(`Удалено выделенных элементов: ${delCount}`);
-      return;
-    }
-
     const { kind, item } = state.selectedItem;
     if (kind === 'note') {
       const idx = state.chart.notes.indexOf(item);
@@ -2087,94 +1962,15 @@
     setStatus('Элемент удалён');
   }
 
-  function nudgeSelectedItems(deltaSec) {
-    const notesToMove = state.selectedNotes && state.selectedNotes.size > 0
-      ? Array.from(state.selectedNotes)
-      : (state.selectedItem && state.selectedItem.kind === 'note' ? [state.selectedItem.item] : []);
-    const eventsToMove = state.selectedEvents && state.selectedEvents.size > 0
-      ? Array.from(state.selectedEvents)
-      : (state.selectedItem && state.selectedItem.kind === 'event' ? [state.selectedItem.item] : []);
-
-    if (!notesToMove.length && !eventsToMove.length) {
-      setCurrentTime(roundTime(Math.max(0, state.currentTime + deltaSec)));
-      return;
-    }
-
-    pushUndo();
-    for (const n of notesToMove) {
-      const prevT = n.time;
-      n.time = roundTime(Math.max(0, n.time + deltaSec));
-      if (n.type === 'REVERSE' || n.type === 'REVERSE_BACK') {
-        syncReverseFlowEvent(prevT, n.time, n.type, false);
-      }
-    }
-    for (const ev of eventsToMove) {
-      ev.time = roundTime(Math.max(0, ev.time + deltaSec));
-    }
-    sortChart();
-    refreshAllViews();
-    setStatus(`Сдвинуто: ${notesToMove.length} нот, ${eventsToMove.length} ив. на ${deltaSec > 0 ? '+' : ''}${Math.round(deltaSec * 1000)} мс`);
-  }
-
-  function duplicateSelectedItems() {
-    const notesToDup = state.selectedNotes && state.selectedNotes.size > 0
-      ? Array.from(state.selectedNotes)
-      : (state.selectedItem && state.selectedItem.kind === 'note' ? [state.selectedItem.item] : []);
-    const eventsToDup = state.selectedEvents && state.selectedEvents.size > 0
-      ? Array.from(state.selectedEvents)
-      : (state.selectedItem && state.selectedItem.kind === 'event' ? [state.selectedItem.item] : []);
-
-    if (!notesToDup.length && !eventsToDup.length) {
-      setStatus('Сначала выдели одну или несколько нот/событий для дублирования');
-      return;
-    }
-
-    pushUndo();
-    const tp = getActiveTimingAt(state.currentTime);
-    const beatShift = 60 / (tp.bpm || 120);
-    let minT = Infinity;
-    let maxT = -Infinity;
-    for (const n of notesToDup) { if (n.time < minT) minT = n.time; if (n.time > maxT) maxT = n.time; }
-    for (const e of eventsToDup) { if (e.time < minT) minT = e.time; if (e.time > maxT) maxT = e.time; }
-    const span = Math.max(beatShift, roundTime((maxT - minT) + beatShift));
-
-    const newNotes = [];
-    const newEvents = [];
-    for (const n of notesToDup) {
-      const copyN = { time: roundTime(n.time + span), type: n.type };
-      state.chart.notes.push(copyN);
-      newNotes.push(copyN);
-      if (copyN.type === 'REVERSE' || copyN.type === 'REVERSE_BACK') {
-        syncReverseFlowEvent(copyN.time, copyN.time, copyN.type, false);
-      }
-    }
-    for (const ev of eventsToDup) {
-      const copyE = JSON.parse(JSON.stringify(ev));
-      copyE.time = roundTime(ev.time + span);
-      state.chart.events.push(copyE);
-      newEvents.push(copyE);
-    }
-    sortChart();
-    state.selectedNotes = new Set(newNotes);
-    state.selectedEvents = new Set(newEvents);
-    state.selectedItem = newNotes[0] ? { kind: 'note', item: newNotes[0] } : (newEvents[0] ? { kind: 'event', item: newEvents[0] } : null);
-    refreshAllViews();
-    setStatus(`Скопировано вперёд (+${span.toFixed(3)}с): ${newNotes.length} нот, ${newEvents.length} ивентов`);
-  }
-
-  function mirrorAllNotes(axis, onlySelected = false) {
-    const targetNotes = (onlySelected && state.selectedNotes && state.selectedNotes.size > 0)
-      ? Array.from(state.selectedNotes)
-      : state.chart.notes;
-    if (!targetNotes.length) return;
+  function mirrorAllNotes(axis) {
+    if (!state.chart.notes.length) return;
     pushUndo();
     const map = axis === 'H' ? MIRROR_H : MIRROR_V;
-    for (const n of targetNotes) {
+    for (const n of state.chart.notes) {
       if (map[n.type]) n.type = map[n.type];
     }
     refreshAllViews();
-    const scopeTxt = (onlySelected && state.selectedNotes && state.selectedNotes.size > 0) ? `Выделенные ноты (${targetNotes.length})` : 'Все ноты';
-    setStatus(axis === 'H' ? `${scopeTxt} отзеркалены по горизонтали (← ↔ →)` : `${scopeTxt} отзеркалены по вертикали (↑ ↔ ↓)`);
+    setStatus(axis === 'H' ? 'Все ноты отзеркалены по горизонтали (← ↔ →)' : 'Все ноты отзеркалены по вертикали (↑ ↔ ↓)');
   }
 
   // --- Генератор ритмичных надписей в стиле карты Hi-Tech ---
@@ -2882,15 +2678,7 @@
   function updateTimeReadout() {
     const el = document.getElementById('time-readout');
     if (el) {
-      const tp = getActiveTimingAt(state.currentTime);
-      const quarterSec = 60 / (tp.bpm || 120);
-      const tsNum = Math.max(1, Number(state.timeSigNum) || 4);
-      const tsDen = Math.max(1, Number(state.timeSigDen) || 4);
-      const sigBeatSec = quarterSec * (4 / tsDen);
-      const totalBeats = Math.max(0, (state.currentTime - tp.time) / sigBeatSec);
-      const barIdx = Math.floor(totalBeats / tsNum) + 1;
-      const beatIdx = (Math.floor(totalBeats) % tsNum) + 1;
-      el.textContent = `${formatTime(state.currentTime)} / ${formatTime(state.duration)} | Такт ${barIdx}.${beatIdx} (${tsNum}/${tsDen})`;
+      el.textContent = `${formatTime(state.currentTime)} / ${formatTime(state.duration)}`;
     }
   }
 
@@ -2901,16 +2689,10 @@
         state.audioEl.currentTime = state.currentTime;
       } catch (_) {}
     }
-    if (state.bgVideoEl && state.bgVideoReady && state.videoBgPreviewEnabled && !keepPlaying) {
-      try {
-        const vDur = state.bgVideoEl.duration;
-        state.bgVideoEl.currentTime = (vDur && isFinite(vDur) && vDur > 0) ? (state.currentTime % vDur) : state.currentTime;
-      } catch (_) {}
-    }
     // Автоскролл таймлайна, если курсор вышел за правую/левую границу
     const canvas = document.getElementById('timeline-canvas');
     if (canvas) {
-      const labelW = getTimelineLabelWidth(canvas.width);
+      const labelW = 118;
       const viewW = canvas.width - labelW;
       const playX = state.currentTime * state.zoomPxPerSec - state.timelineScrollX;
       if (playX > viewW * 0.88) {
@@ -3145,14 +2927,6 @@
           state.assets.bgBytes = bytes;
           state.bgImage = img;
           state.chart.backgroundFile = fileName || 'bg.png';
-          state.assets.bgBytes = bytes;
-          state.bgImage = img;
-          state.bgIsVideo = false;
-          state.bgVideoReady = false;
-          if (state.bgVideoEl) {
-            try { state.bgVideoEl.pause(); } catch (_) {}
-          }
-          state.chart.backgroundFile = fileName || 'bg.png';
           const stEl = document.getElementById('asset-bg-status');
           if (stEl) stEl.textContent = `${state.chart.backgroundFile} (${img.width}×${img.height})`;
         }
@@ -3161,76 +2935,6 @@
       };
       img.onerror = () => resolve();
       img.src = url;
-    });
-  }
-
-  function loadVideoBackgroundFromBytes(bytes, fileName, previewOnly = false) {
-    return new Promise((resolve) => {
-      if (!previewOnly) {
-        state.assets.bgBytes = bytes;
-        state.bgIsVideo = true;
-        const cleanName = (fileName && /\.ogv$/i.test(fileName)) ? fileName : 'bg.ogv';
-        state.chart.backgroundFile = cleanName;
-        const bgInput = document.getElementById('chart-bg-file');
-        if (bgInput) bgInput.value = cleanName;
-      }
-
-      if (!state.bgVideoEl) {
-        const v = document.createElement('video');
-        v.muted = true;
-        v.loop = true;
-        v.playsInline = true;
-        v.preload = 'auto';
-        state.bgVideoEl = v;
-      }
-
-      if (state.bgVideoUrl) {
-        URL.revokeObjectURL(state.bgVideoUrl);
-      }
-
-      const ext = ((fileName || 'bg.ogv').split('.').pop() || 'ogv').toLowerCase();
-      const mime = ext === 'mp4' ? 'video/mp4' : ext === 'webm' ? 'video/webm' : 'video/ogg';
-      const blob = new Blob([bytes], { type: mime });
-      const url = URL.createObjectURL(blob);
-      state.bgVideoUrl = url;
-
-      const v = state.bgVideoEl;
-      const sizeMb = (bytes.byteLength / 1024 / 1024).toFixed(2);
-      const stEl = document.getElementById('asset-bg-status');
-
-      const onReady = () => {
-        v.removeEventListener('loadeddata', onReady);
-        v.removeEventListener('error', onErr);
-        state.bgVideoReady = true;
-        try {
-          v.currentTime = state.currentTime;
-          v.playbackRate = state.playbackRate;
-          if (state.isPlaying && state.videoBgPreviewEnabled) v.play().catch(() => {});
-        } catch (_) {}
-        if (stEl) {
-          stEl.textContent = previewOnly
-            ? `🎬 ${state.chart.backgroundFile} + превью ${fileName} (${v.videoWidth}×${v.videoHeight})`
-            : `🎬 ${state.chart.backgroundFile} (${v.videoWidth}×${v.videoHeight}, ${sizeMb} МБ)`;
-        }
-        renderPreviewCanvas();
-        resolve(true);
-      };
-
-      const onErr = () => {
-        v.removeEventListener('loadeddata', onReady);
-        v.removeEventListener('error', onErr);
-        state.bgVideoReady = false;
-        if (stEl) {
-          stEl.textContent = `🎬 ${state.chart.backgroundFile} (${sizeMb} МБ, упакован в .swmap; для превью в этом браузере можно выбрать 👁 Превью-видео)`;
-        }
-        renderPreviewCanvas();
-        resolve(false);
-      };
-
-      v.addEventListener('loadeddata', onReady);
-      v.addEventListener('error', onErr);
-      v.src = url;
-      v.load();
     });
   }
 
@@ -3301,12 +3005,8 @@
           await loadAudioFromBytes(bytes, name);
         } else if (name === coverName || /^cover\./i.test(name)) {
           await loadImageFromBytes(bytes, 'cover', name);
-        } else if (name === bgName || /^bg\./i.test(name) || /\.ogv$/i.test(name)) {
-          if (/\.ogv$/i.test(name)) {
-            await loadVideoBackgroundFromBytes(bytes, name, false);
-          } else {
-            await loadImageFromBytes(bytes, 'bg', name);
-          }
+        } else if (name === bgName || /^bg\./i.test(name)) {
+          await loadImageFromBytes(bytes, 'bg', name);
         } else {
           state.assets.extraFiles[name] = bytes;
         }
@@ -3434,10 +3134,9 @@
       const bgBytes = state.assets.bgBytes || await generatePlaceholderPngBytes(1280, 720, state.meta.menu_color, '');
       const audioBytes = state.assets.audioBytes || generateSilentWavBytes(Math.max(10, state.duration));
 
-      const isOgvBg = /\.ogv$/i.test(chartOut.backgroundFile);
       const entries = [
         { name: chartOut.coverFile, data: coverBytes, compress: false },
-        { name: chartOut.backgroundFile, data: bgBytes, compress: !isOgvBg },
+        { name: chartOut.backgroundFile, data: bgBytes, compress: true },
         { name: 'chart.json', data: JSON.stringify(chartOut, null, 2), compress: false },
         { name: 'meta.json', data: JSON.stringify(metaOut, null, 2), compress: false },
         { name: chartOut.audioFile, data: audioBytes, compress: false }
@@ -3683,30 +3382,15 @@
         }
       }
 
-      // Проверяем пересечение долей для метронома (с учётом тактового размера N/M: 3/4, 4/4, 5/4, 6/8, 11/8 и т.д.)
+      // Проверяем пересечение долей для метронома
       if (state.metronomeEnabled) {
         const tp = getActiveTimingAt(state.currentTime);
-        const quarterSec = 60 / (tp.bpm || 120);
-        const tsNum = Math.max(1, Number(state.timeSigNum) || 4);
-        const tsDen = Math.max(1, Number(state.timeSigDen) || 4);
-        const sigBeatSec = quarterSec * (4 / tsDen);
-        const prevBeat = Math.floor((prevTime - tp.time) / sigBeatSec);
-        const curBeat = Math.floor((state.currentTime - tp.time) / sigBeatSec);
+        const beatSec = 60 / tp.bpm;
+        const prevBeat = Math.floor((prevTime - tp.time) / beatSec);
+        const curBeat = Math.floor((state.currentTime - tp.time) / beatSec);
         if (curBeat > prevBeat && state.currentTime >= tp.time) {
-          const beatInBar = ((curBeat % tsNum) + tsNum) % tsNum;
-          const isDownbeat = beatInBar === 0;
-          const isCompoundSubAccent = !isDownbeat && tsDen === 8 && (tsNum % 3 === 0) && (beatInBar % 3 === 0);
-          const freq = isDownbeat ? 1580 : (isCompoundSubAccent ? 1140 : 880);
-          const gain = isDownbeat ? 0.24 : (isCompoundSubAccent ? 0.19 : 0.15);
-          playTick(freq, gain, 0.045, 'sine', 'metro');
-        }
-      }
-
-      if (state.bgVideoEl && state.bgVideoReady && state.videoBgPreviewEnabled) {
-        const vDur = state.bgVideoEl.duration;
-        const targetVT = (vDur && isFinite(vDur) && vDur > 0) ? (state.currentTime % vDur) : state.currentTime;
-        if (Math.abs(state.bgVideoEl.currentTime - targetVT) > 0.28) {
-          try { state.bgVideoEl.currentTime = targetVT; } catch (_) {}
+          const isBar = curBeat % 4 === 0;
+          playTick(isBar ? 1560 : 880, isBar ? 0.22 : 0.16, 0.045, 'sine', 'metro');
         }
       }
 
@@ -3728,14 +3412,6 @@
       state.audioEl.volume = Math.max(0, Math.min(1, state.bgmVolume !== undefined ? state.bgmVolume : 0.70));
       state.audioEl.play().catch(() => {});
     }
-    if (state.bgVideoEl && state.bgVideoReady && state.videoBgPreviewEnabled) {
-      try {
-        const vDur = state.bgVideoEl.duration;
-        state.bgVideoEl.currentTime = (vDur && isFinite(vDur) && vDur > 0) ? (state.currentTime % vDur) : state.currentTime;
-        state.bgVideoEl.playbackRate = state.playbackRate;
-        state.bgVideoEl.play().catch(() => {});
-      } catch (_) {}
-    }
   }
 
   function pausePlayback() {
@@ -3744,9 +3420,6 @@
     if (btn) btn.textContent = '▶ Пуск';
     if (state.audioEl && !state.audioEl.paused) {
       state.audioEl.pause();
-    }
-    if (state.bgVideoEl && !state.bgVideoEl.paused) {
-      try { state.bgVideoEl.pause(); } catch (_) {}
     }
   }
 
@@ -3970,37 +3643,22 @@
       const f = e.target.files && e.target.files[0];
       if (!f) return;
       const buf = await f.arrayBuffer();
-      const bytes = new Uint8Array(buf);
-      if (/\.(ogv|mp4|webm)$/i.test(f.name) || (f.type && f.type.startsWith('video/'))) {
-        const isOgv = /\.ogv$/i.test(f.name);
-        const targetBgName = isOgv ? 'bg.ogv' : f.name;
-        await loadVideoBackgroundFromBytes(bytes, targetBgName, false);
-        syncMetaAndChartInputs();
-        setStatus(
-          isOgv
-            ? `Загружен видео-фон ${f.name} → сохранён как ${targetBgName} в .swmap без перекодирования`
-            : `Загружено видео ${f.name} для превью (в самой игре Swipetava поддерживается .ogv)`
-        );
-        e.target.value = '';
-        return;
+      if (/\.(ctex|stex)$/i.test(f.name) && window.SwmapZip && window.SwmapZip.convertGodotTexture) {
+        try {
+          const conv = await window.SwmapZip.convertGodotTexture(buf, 'bg.png');
+          await loadImageFromBytes(conv.bytes, 'bg', 'bg.png');
+          syncMetaAndChartInputs();
+          setStatus(`Сконвертирован Godot ${f.name} (${conv.sourceFormat} ${conv.width}×${conv.height}) → bg.png`);
+          return;
+        } catch (err) {
+          setStatus(`Ошибка конвертации .ctex: ${err.message}`);
+          return;
+        }
       }
-      await loadImageFromBytes(bytes, 'bg', f.name);
+      await loadImageFromBytes(new Uint8Array(buf), 'bg', f.name);
       syncMetaAndChartInputs();
       setStatus(`Загружен фон ${f.name}`);
-      e.target.value = '';
     });
-
-    const bgPreviewVidInput = document.getElementById('input-bg-preview-video');
-    if (bgPreviewVidInput) {
-      bgPreviewVidInput.addEventListener('change', async (e) => {
-        const f = e.target.files && e.target.files[0];
-        if (!f) return;
-        const buf = await f.arrayBuffer();
-        await loadVideoBackgroundFromBytes(new Uint8Array(buf), f.name, true);
-        setStatus(`Подключено превью-видео ${f.name} (в архиве .swmap остаётся ${state.chart.backgroundFile})`);
-        e.target.value = '';
-      });
-    }
 
     // Поддержка Drag-and-Drop .swmap прямо на окно браузера
     window.addEventListener('dragover', (e) => {
@@ -4082,122 +3740,11 @@
     const tlCanvas = document.getElementById('timeline-canvas');
     tlCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    // --- Помощники для группового выделения и перетаскивания нот/событий ---
-    function startGroupDragForHit(hit) {
-      pushUndo();
-      state.selectedItem = hit;
-      if (hit.kind === 'note') {
-        if (!state.selectedNotes.has(hit.item)) {
-          state.selectedNotes.clear();
-          state.selectedEvents.clear();
-          state.selectedNotes.add(hit.item);
-        }
-      } else if (hit.kind === 'event') {
-        if (!state.selectedEvents.has(hit.item)) {
-          state.selectedNotes.clear();
-          state.selectedEvents.clear();
-          state.selectedEvents.add(hit.item);
-        }
-      }
-
-      const items = [];
-      for (const n of state.selectedNotes) {
-        items.push({ kind: 'note', item: n, startTime: n.time });
-      }
-      for (const ev of state.selectedEvents) {
-        items.push({ kind: 'event', item: ev, startTime: ev.time });
-      }
-      state.dragGroupInitial = {
-        anchorItem: hit.item,
-        anchorStartTime: hit.item.time,
-        items
-      };
-      state.draggingItem = hit;
-    }
-
-    function applyGroupDragAtTime(newAnchorTime) {
-      if (!state.dragGroupInitial || !state.draggingItem) return;
-      const group = state.dragGroupInitial;
-      let minStart = Infinity;
-      for (const entry of group.items) {
-        if (entry.startTime < minStart) minStart = entry.startTime;
-      }
-      let delta = newAnchorTime - group.anchorStartTime;
-      if (minStart + delta < 0) {
-        delta = -minStart;
-      }
-      for (const entry of group.items) {
-        const prevT = entry.item.time;
-        const nextT = roundTime(Math.max(0, entry.startTime + delta));
-        entry.item.time = nextT;
-        if (entry.kind === 'note' && (entry.item.type === 'REVERSE' || entry.item.type === 'REVERSE_BACK')) {
-          syncReverseFlowEvent(prevT, nextT, entry.item.type, false);
-        }
-      }
-      sortChart();
-      renderPreviewCanvas();
-      renderTimelineCanvas();
-      renderInspector();
-      renderEventsList();
-    }
-
-    function finalizeMarqueeSelection(additive = false) {
-      if (!state.marqueeRect || !tlCanvas) return;
-      const labelW = getTimelineLabelWidth(tlCanvas.width);
-      const layout = getTimelineTrackLayout(tlCanvas.height);
-      const xMin = Math.max(labelW, Math.min(state.marqueeRect.x0, state.marqueeRect.x1));
-      const xMax = Math.max(state.marqueeRect.x0, state.marqueeRect.x1);
-      const yMin = Math.min(state.marqueeRect.y0, state.marqueeRect.y1);
-      const yMax = Math.max(state.marqueeRect.y0, state.marqueeRect.y1);
-
-      if (!additive) {
-        state.selectedNotes.clear();
-        state.selectedEvents.clear();
-      }
-
-      const notesMidY = (layout.notesTop + layout.notesBottom) / 2;
-      for (const n of state.chart.notes) {
-        const nx = timeToX(n.time, labelW);
-        let ny = notesMidY;
-        if (layout.isPiano) {
-          const rIdx = Math.max(0, NOTE_TYPES.findIndex(nt => nt.id === n.type));
-          ny = layout.notesTop + (rIdx + 0.5) * layout.laneH;
-        }
-        if (nx >= xMin && nx <= xMax && ny >= yMin && ny <= yMax) {
-          state.selectedNotes.add(n);
-        }
-      }
-
-      for (const ev of state.chart.events) {
-        const isTS = ev.type === 'TEXT' || ev.type === 'NOTE_SPEED';
-        const bandTop = isTS ? layout.textSpeedTop : layout.fxTop;
-        const bandH = isTS ? (layout.textSpeedBottom - layout.textSpeedTop) : (layout.fxBottom - layout.fxTop);
-        const laneIdx = isTS ? (ev.type === 'TEXT' ? 0 : 1) : (Math.abs(hashCode(ev.type)) % 2);
-        const pillH = Math.min(20, (bandH - 8) / 2);
-        const ey = bandTop + 4 + laneIdx * (pillH + 3) + pillH / 2;
-        const ex0 = timeToX(ev.time, labelW);
-        const dur = Number(ev.duration) > 0 ? Number(ev.duration) : 0;
-        const ex1 = ex0 + Math.max(24, dur > 0 ? dur * state.zoomPxPerSec : 54);
-        if (ex1 >= xMin && ex0 <= xMax && ey >= yMin && ey <= yMax) {
-          state.selectedEvents.add(ev);
-        }
-      }
-
-      const firstN = state.selectedNotes.values().next().value;
-      const firstE = state.selectedEvents.values().next().value;
-      if (firstN) state.selectedItem = { kind: 'note', item: firstN };
-      else if (firstE) state.selectedItem = { kind: 'event', item: firstE };
-
-      state.marqueeRect = null;
-      refreshAllViews();
-      setStatus(`Выделено рамкой: ${state.selectedNotes.size} нот, ${state.selectedEvents.size} событий`);
-    }
-
     tlCanvas.addEventListener('mousedown', (e) => {
       const rect = tlCanvas.getBoundingClientRect();
       const mx = (e.clientX - rect.left) * (tlCanvas.width / rect.width);
       const my = (e.clientY - rect.top) * (tlCanvas.height / rect.height);
-      const labelW = getTimelineLabelWidth(tlCanvas.width);
+      const labelW = 118;
       const hit = hitTestTimeline(mx, my);
       if (hit && hit.kind === 'piano_label') {
         state.activeNoteType = hit.noteType;
@@ -4220,43 +3767,17 @@
         return;
       }
 
-      if (state.timelineTouchMode === 'erase') {
-        if (hit && (hit.kind === 'note' || hit.kind === 'event')) {
-          state.selectedNotes.clear();
-          state.selectedEvents.clear();
-          state.selectedItem = hit;
-          deleteSelectedItem();
-        }
-        return;
-      }
-
-      // Клик по существующей ноте или событию
       if (hit && (hit.kind === 'note' || hit.kind === 'event')) {
-        if (e.ctrlKey || e.metaKey || (state.timelineTouchMode === 'select' && e.shiftKey)) {
-          const targetSet = hit.kind === 'note' ? state.selectedNotes : state.selectedEvents;
-          if (targetSet.has(hit.item)) targetSet.delete(hit.item);
-          else targetSet.add(hit.item);
-          state.selectedItem = hit;
-          refreshAllViews();
-          return;
-        }
-        startGroupDragForHit(hit);
+        pushUndo();
+        state.selectedItem = hit;
+        state.draggingItem = hit;
         setCurrentTime(hit.item.time);
         refreshAllViews();
         return;
       }
 
-      // Режим Выделения рамкой (или Shift + перетаскивание по пустому месту)
-      if (state.timelineTouchMode === 'select' || (e.shiftKey && my >= 26)) {
-        state.marqueeRect = { x0: mx, y0: my, x1: mx, y1: my, additive: e.ctrlKey || e.metaKey || e.shiftKey };
-        renderTimelineCanvas();
-        return;
-      }
-
       // Одиночный клик в режиме Правки (draw) или двойной клик по дорожке нот — ставим ноту выбранного ряда Пиано-ролла
       if (hit && hit.kind === 'empty_note_lane' && (state.timelineTouchMode === 'draw' || e.detail >= 2)) {
-        state.selectedNotes.clear();
-        state.selectedEvents.clear();
         const clickedTime = e.shiftKey ? roundTime(xToTime(mx, labelW)) : snapTime(xToTime(mx, labelW));
         const targetType = hit.laneNoteType || state.activeNoteType;
         addOrReplaceNoteAt(clickedTime, targetType, state.timelineViewMode === 'pianoroll' || e.altKey || state.stackMode);
@@ -4277,42 +3798,44 @@
     });
 
     window.addEventListener('mousemove', (e) => {
-      if (!state.draggingItem && !state.isScrubbing && !state.marqueeRect) return;
+      if (!state.draggingItem && !state.isScrubbing) return;
       const rect = tlCanvas.getBoundingClientRect();
       const mx = (e.clientX - rect.left) * (tlCanvas.width / rect.width);
-      const my = (e.clientY - rect.top) * (tlCanvas.height / rect.height);
-      const labelW = getTimelineLabelWidth(tlCanvas.width);
+      const labelW = 118;
       const rawT = xToTime(mx, labelW);
       const newT = e.shiftKey ? roundTime(rawT) : snapTime(rawT);
 
-      if (state.marqueeRect) {
-        state.marqueeRect.x1 = mx;
-        state.marqueeRect.y1 = my;
+      if (state.draggingItem) {
+        const prevT = state.draggingItem.item.time;
+        state.draggingItem.item.time = newT;
+        if (state.draggingItem.kind === 'note' && (state.draggingItem.item.type === 'REVERSE' || state.draggingItem.item.type === 'REVERSE_BACK')) {
+          syncReverseFlowEvent(prevT, newT, state.draggingItem.item.type, false);
+        }
+        sortChart();
+        renderPreviewCanvas();
         renderTimelineCanvas();
-      } else if (state.draggingItem) {
-        applyGroupDragAtTime(newT);
+        renderInspector();
+        renderEventsList();
       } else if (state.isScrubbing) {
         setCurrentTime(newT);
       }
     });
 
     window.addEventListener('mouseup', () => {
-      if (state.marqueeRect) {
-        finalizeMarqueeSelection(!!state.marqueeRect.additive);
-      }
       state.draggingItem = null;
-      state.dragGroupInitial = null;
       state.isScrubbing = false;
     });
 
     tlCanvas.addEventListener('wheel', (e) => {
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
+        // Зум таймлайна
         const factor = e.deltaY < 0 ? 1.15 : 0.87;
         state.zoomPxPerSec = Math.min(600, Math.max(40, Math.round(state.zoomPxPerSec * factor)));
         const zr = document.getElementById('zoom-range');
         if (zr) zr.value = String(state.zoomPxPerSec);
       } else {
+        // Горизонтальный скролл
         state.timelineScrollX = Math.max(0, state.timelineScrollX + (e.deltaX || e.deltaY));
       }
       renderTimelineCanvas();
@@ -4334,28 +3857,6 @@
         redo();
         return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
-        e.preventDefault();
-        state.selectedNotes = new Set(state.chart.notes);
-        state.selectedEvents = new Set(state.chart.events);
-        refreshAllViews();
-        setStatus(`Выделены все элементы: ${state.selectedNotes.size} нот, ${state.selectedEvents.size} событий`);
-        return;
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
-        e.preventDefault();
-        duplicateSelectedItems();
-        return;
-      }
-      if (e.code === 'Escape') {
-        state.selectedNotes.clear();
-        state.selectedEvents.clear();
-        state.selectedItem = null;
-        state.marqueeRect = null;
-        refreshAllViews();
-        setStatus('Выделение снято');
-        return;
-      }
 
       if (e.code === 'Space') {
         e.preventDefault();
@@ -4364,7 +3865,7 @@
       }
 
       if (e.code === 'Delete' || e.code === 'Backspace') {
-        if (state.selectedItem || state.selectedNotes.size > 0 || state.selectedEvents.size > 0) {
+        if (state.selectedItem) {
           e.preventDefault();
           deleteSelectedItem();
         }
@@ -4382,6 +3883,7 @@
         return;
       }
 
+      // Быстрая расстановка нот с клавиатуры (WASD / стрелки / QEZC)
       const keyMap = {
         KeyW: 'UP', ArrowUp: 'UP',
         KeyS: 'DOWN', ArrowDown: 'DOWN',
@@ -4471,45 +3973,22 @@
     document.querySelectorAll('[data-nudge-ms]').forEach(btn => {
       btn.addEventListener('click', () => {
         const deltaSec = (Number(btn.getAttribute('data-nudge-ms')) || 0) / 1000;
-        nudgeSelectedItems(deltaSec);
+        if (state.selectedItem && state.selectedItem.item) {
+          pushUndo();
+          const it = state.selectedItem.item;
+          const prevT = it.time;
+          it.time = roundTime(Math.max(0, it.time + deltaSec));
+          if (state.selectedItem.kind === 'note' && (it.type === 'REVERSE' || it.type === 'REVERSE_BACK')) {
+            syncReverseFlowEvent(prevT, it.time, it.type, false);
+          }
+          sortChart();
+          refreshAllViews();
+          setStatus(`Сдвиг на ${deltaSec > 0 ? '+' : ''}${(deltaSec * 1000).toFixed(0)} мс -> ${it.time.toFixed(3)} сек`);
+        } else {
+          setCurrentTime(roundTime(Math.max(0, state.currentTime + deltaSec)));
+        }
       });
     });
-
-    // Кнопки панели группового выделения (#multi-select-bar)
-    document.querySelectorAll('[data-msel-nudge]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const deltaSec = (Number(btn.getAttribute('data-msel-nudge')) || 0) / 1000;
-        nudgeSelectedItems(deltaSec);
-      });
-    });
-    const btnMselDup = document.getElementById('btn-msel-dup');
-    if (btnMselDup) btnMselDup.addEventListener('click', duplicateSelectedItems);
-    const btnMselMirH = document.getElementById('btn-msel-mirror-h');
-    if (btnMselMirH) btnMselMirH.addEventListener('click', () => mirrorAllNotes('H', true));
-    const btnMselMirV = document.getElementById('btn-msel-mirror-v');
-    if (btnMselMirV) btnMselMirV.addEventListener('click', () => mirrorAllNotes('V', true));
-    const btnMselAll = document.getElementById('btn-msel-all');
-    if (btnMselAll) {
-      btnMselAll.addEventListener('click', () => {
-        state.selectedNotes = new Set(state.chart.notes);
-        state.selectedEvents = new Set(state.chart.events);
-        refreshAllViews();
-        setStatus(`Выделены все элементы: ${state.selectedNotes.size} нот, ${state.selectedEvents.size} событий`);
-      });
-    }
-    const btnMselDel = document.getElementById('btn-msel-del');
-    if (btnMselDel) btnMselDel.addEventListener('click', deleteSelectedItem);
-    const btnMselClear = document.getElementById('btn-msel-clear');
-    if (btnMselClear) {
-      btnMselClear.addEventListener('click', () => {
-        state.selectedNotes.clear();
-        state.selectedEvents.clear();
-        state.selectedItem = null;
-        state.marqueeRect = null;
-        refreshAllViews();
-        setStatus('Выделение снято');
-      });
-    }
 
     const btnMobDel = document.getElementById('btn-mob-del-selected');
     if (btnMobDel) {
@@ -4562,8 +4041,6 @@
       state.duration = maxT + 5;
 
       state.selectedItem = null;
-      state.selectedNotes.clear();
-      state.selectedEvents.clear();
       state.timelineScrollX = 0;
       updateMapOriginBadge({
         isSwipEdit: true,
@@ -4574,6 +4051,7 @@
       syncMetaAndChartInputs();
       setCurrentTime(0);
 
+      // Подгружаем встроенную обложку и фон из PLAYLISTS_BUNDLE.sharedImages
       const sharedImgs = (PLAYLISTS_BUNDLE && PLAYLISTS_BUNDLE.sharedImages) || {};
       if (song.coverRef && sharedImgs[song.coverRef]) {
         try {
@@ -4588,6 +4066,7 @@
         } catch (_) {}
       }
 
+      // Пробуем подгрузить аудиофайл песни из папки ./charts/<Плейлист>/<Папка>/<audioFile>
       let audioLoaded = false;
       if (song.audioPath && window.location && window.location.protocol !== 'file:') {
         try {
@@ -4619,7 +4098,6 @@
       const rate = Math.min(4.0, Math.max(0.1, Number(val) || 1.0));
       state.playbackRate = rate;
       if (state.audioEl) state.audioEl.playbackRate = rate;
-      if (state.bgVideoEl) state.bgVideoEl.playbackRate = rate;
       if (customRateInput) customRateInput.value = String(rate);
       setStatus(`Скорость проигрывания превью: ${rate}x`);
     };
@@ -4630,8 +4108,6 @@
     }
     if (btnApplyCustomRate && customRateInput) {
       btnApplyCustomRate.addEventListener('click', () => applyCustomPlaybackRate(customRateInput.value));
-      customRateInput.addEventListener('change', () => applyCustomPlaybackRate(customRateInput.value));
-    } else if (customRateInput) {
       customRateInput.addEventListener('change', () => applyCustomPlaybackRate(customRateInput.value));
     }
 
@@ -4705,14 +4181,14 @@
       btnToggleRec.addEventListener('click', () => {
         state.recMode = !state.recMode;
         btnToggleRec.classList.toggle('rec-btn-active', state.recMode);
-        btnToggleRec.textContent = state.recMode ? '🔴 ЗАПИСЬ ВКЛ' : '🔴 Запись';
+        btnToggleRec.textContent = state.recMode ? '🔴 ЗАПИСЬ ВКЛ' : '🔴 Запись (REC)';
         setStatus(state.recMode
           ? 'Режим живой записи включён: запусти трек и нажимай кнопки направлений (или клавиши WASD/стрелки) в такт!'
           : 'Режим живой записи выключен');
       });
     }
 
-    // 11. Переключатели режима дорожки (10-рядный Пиано-ролл / Компактный 1 ряд) и Тач-инструментов (Правка / Выделение / Прокрутка / Ластик)
+    // 11. Переключатели режима дорожки (10-рядный Пиано-ролл / Компактный 1 ряд) и Тач-инструментов (Правка / Прокрутка / Ластик)
     document.querySelectorAll('[data-tl-view]').forEach((btn) => {
       btn.addEventListener('click', () => {
         state.timelineViewMode = btn.getAttribute('data-tl-view') || 'pianoroll';
@@ -4725,10 +4201,8 @@
       btn.addEventListener('click', () => {
         state.timelineTouchMode = btn.getAttribute('data-touch-mode') || 'draw';
         document.querySelectorAll('[data-touch-mode]').forEach((b) => b.classList.toggle('active', b === btn));
-        updateMultiSelectBarUI();
         const titles = {
           draw: 'Правка (тап по ряду в Пиано-ролле сразу ставит/убирает ноту или собирает стак)',
-          select: 'Выделение (проведи рамкой по нотам или тапай по ним, затем перетащи любую выделенную ноту для сдвига всей группы)',
           scroll: 'Прокрутка (1 палец — двигать дорожку, 2 пальца — зум)',
           erase: 'Ластик (тап по ноте или событию удаляет его)'
         };
@@ -4757,7 +4231,7 @@
       };
 
       tlCanvas.addEventListener('touchstart', (e) => {
-        const labelW = getTimelineLabelWidth(tlCanvas.width);
+        const labelW = 118;
         if (e.touches.length === 2) {
           e.preventDefault();
           const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -4795,46 +4269,21 @@
 
         if (state.timelineTouchMode === 'erase') {
           if (hit && (hit.kind === 'note' || hit.kind === 'event')) {
-            state.selectedNotes.clear();
-            state.selectedEvents.clear();
             state.selectedItem = hit;
             deleteSelectedItem();
           }
           return;
         }
 
-        if (state.timelineTouchMode === 'select') {
-          if (hit && (hit.kind === 'note' || hit.kind === 'event')) {
-            const targetSet = hit.kind === 'note' ? state.selectedNotes : state.selectedEvents;
-            if (targetSet.has(hit.item)) {
-              startGroupDragForHit(hit);
-              tGesture.mode = 'drag_item';
-              tGesture.wasAlreadySelected = true;
-            } else {
-              targetSet.add(hit.item);
-              state.selectedItem = hit;
-              startGroupDragForHit(hit);
-              tGesture.mode = 'drag_item';
-              tGesture.wasAlreadySelected = false;
-            }
-            refreshAllViews();
-          } else {
-            state.marqueeRect = { x0: mx, y0: my, x1: mx, y1: my, additive: false };
-            tGesture.mode = 'marquee';
-            renderTimelineCanvas();
-          }
-          return;
-        }
-
         if (state.timelineTouchMode === 'draw') {
           if (hit && (hit.kind === 'note' || hit.kind === 'event')) {
-            startGroupDragForHit(hit);
+            pushUndo();
+            state.selectedItem = hit;
+            state.draggingItem = hit;
             setCurrentTime(hit.item.time);
             refreshAllViews();
             tGesture.mode = 'drag_item';
           } else if (hit && hit.kind === 'empty_note_lane') {
-            state.selectedNotes.clear();
-            state.selectedEvents.clear();
             const targetType = hit.laneNoteType || state.activeNoteType;
             addOrReplaceNoteAt(tappedTime, targetType, state.timelineViewMode === 'pianoroll' || state.stackMode);
             setCurrentTime(tappedTime);
@@ -4861,7 +4310,7 @@
       }, { passive: false });
 
       tlCanvas.addEventListener('touchmove', (e) => {
-        const labelW = getTimelineLabelWidth(tlCanvas.width);
+        const labelW = 118;
         if (tGesture.mode === 'pinch' && e.touches.length === 2) {
           e.preventDefault();
           const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -4880,18 +4329,22 @@
         }
         if (e.touches.length !== 1) return;
         e.preventDefault();
-        const { mx, my } = touchCanvasCoords(e.touches[0]);
+        const { mx } = touchCanvasCoords(e.touches[0]);
         const deltaX = mx - tGesture.startX;
-        const deltaY = my - tGesture.startY;
-        if (Math.hypot(deltaX, deltaY) > 6) tGesture.moved = true;
+        if (Math.abs(deltaX) > 6) tGesture.moved = true;
 
-        if (tGesture.mode === 'marquee' && state.marqueeRect) {
-          state.marqueeRect.x1 = mx;
-          state.marqueeRect.y1 = my;
-          renderTimelineCanvas();
-        } else if (tGesture.mode === 'drag_item' && state.draggingItem) {
+        if (tGesture.mode === 'drag_item' && state.draggingItem) {
+          const prevT = state.draggingItem.item.time;
           const newT = snapTime(xToTime(mx, labelW));
-          applyGroupDragAtTime(newT);
+          state.draggingItem.item.time = newT;
+          if (state.draggingItem.kind === 'note' && (state.draggingItem.item.type === 'REVERSE' || state.draggingItem.item.type === 'REVERSE_BACK')) {
+            syncReverseFlowEvent(prevT, newT, state.draggingItem.item.type, false);
+          }
+          sortChart();
+          renderPreviewCanvas();
+          renderTimelineCanvas();
+          renderInspector();
+          renderEventsList();
         } else if (tGesture.mode === 'scrub') {
           setCurrentTime(snapTime(xToTime(mx, labelW)));
         } else if (tGesture.mode === 'pan') {
@@ -4901,20 +4354,12 @@
       }, { passive: false });
 
       tlCanvas.addEventListener('touchend', () => {
-        const labelW = getTimelineLabelWidth(tlCanvas.width);
-        if (tGesture.mode === 'marquee' && state.marqueeRect) {
-          finalizeMarqueeSelection(false);
-        } else if (tGesture.mode === 'drag_item' && !tGesture.moved && state.timelineTouchMode === 'select' && tGesture.wasAlreadySelected && state.draggingItem) {
-          const targetSet = state.draggingItem.kind === 'note' ? state.selectedNotes : state.selectedEvents;
-          targetSet.delete(state.draggingItem.item);
-          refreshAllViews();
-        } else if (tGesture.mode === 'pan' && !tGesture.moved && state.timelineTouchMode === 'scroll') {
-          const t = snapTime(xToTime(tGesture.startX, labelW));
+        if (tGesture.mode === 'pan' && !tGesture.moved && state.timelineTouchMode === 'scroll') {
+          const t = snapTime(xToTime(tGesture.startX, 118));
           setCurrentTime(t);
         }
         tGesture.mode = null;
         state.draggingItem = null;
-        state.dragGroupInitial = null;
       });
     }
 
@@ -5043,73 +4488,7 @@
       });
     }
 
-    // 15. Чекбокс обучающих пауз туториала, тоггл Видео-фона в превью и настройки тактового размера метронома
-    const vidPreviewChk = document.getElementById('check-video-bg-preview');
-    if (vidPreviewChk) {
-      vidPreviewChk.addEventListener('change', () => {
-        state.videoBgPreviewEnabled = !!vidPreviewChk.checked;
-        if (!state.videoBgPreviewEnabled && state.bgVideoEl && !state.bgVideoEl.paused) {
-          try { state.bgVideoEl.pause(); } catch (_) {}
-        } else if (state.videoBgPreviewEnabled && state.isPlaying && state.bgVideoEl && state.bgVideoReady) {
-          try { state.bgVideoEl.play().catch(() => {}); } catch (_) {}
-        }
-        renderPreviewCanvas();
-        setStatus(
-          state.videoBgPreviewEnabled
-            ? 'Отрисовка видео-фона (.ogv) в превью включена'
-            : 'Видео-фон скрыт в превью (для экономии ресурсов смартфона; в архиве .swmap он сохранится)'
-        );
-      });
-    }
-
-    const tsPreset = document.getElementById('metro-timesig-preset');
-    const tsNumInput = document.getElementById('metro-ts-num');
-    const tsDenSelect = document.getElementById('metro-ts-den');
-
-    const applyTimeSignature = (numVal, denVal, updatePreset = true) => {
-      const n = Math.min(32, Math.max(1, Math.round(Number(numVal) || 4)));
-      const dRaw = Math.round(Number(denVal) || 4);
-      const d = [2, 4, 8, 16].includes(dRaw) ? dRaw : 4;
-      state.timeSigNum = n;
-      state.timeSigDen = d;
-      if (tsNumInput) tsNumInput.value = String(n);
-      if (tsDenSelect) tsDenSelect.value = String(d);
-      if (updatePreset && tsPreset) {
-        const key = `${n}/${d}`;
-        const hasOpt = Array.from(tsPreset.options).some(o => o.value === key);
-        tsPreset.value = hasOpt ? key : 'custom';
-      }
-      try {
-        localStorage.setItem('swipedit_ts_num', String(n));
-        localStorage.setItem('swipedit_ts_den', String(d));
-      } catch (_) {}
-      renderTimelineCanvas();
-      updateTimeReadout();
-      setStatus(`Тактовый размер метронома и сетки: ${n}/${d}`);
-    };
-
-    try {
-      const savedTsN = localStorage.getItem('swipedit_ts_num');
-      const savedTsD = localStorage.getItem('swipedit_ts_den');
-      if (savedTsN && savedTsD) {
-        applyTimeSignature(savedTsN, savedTsD, true);
-      }
-    } catch (_) {}
-
-    if (tsPreset) {
-      tsPreset.addEventListener('change', () => {
-        if (tsPreset.value === 'custom') return;
-        const [nStr, dStr] = tsPreset.value.split('/');
-        applyTimeSignature(nStr, dStr, false);
-      });
-    }
-    if (tsNumInput) {
-      tsNumInput.addEventListener('change', () => applyTimeSignature(tsNumInput.value, tsDenSelect ? tsDenSelect.value : state.timeSigDen, true));
-    }
-    if (tsDenSelect) {
-      tsDenSelect.addEventListener('change', () => applyTimeSignature(tsNumInput ? tsNumInput.value : state.timeSigNum, tsDenSelect.value, true));
-    }
-
+    // 15. Чекбокс обучающих пауз туториала
     const tutModeChk = document.getElementById('chart-tutorial-mode');
     if (tutModeChk) {
       tutModeChk.addEventListener('change', () => {
@@ -5190,70 +4569,3 @@
 
   window.addEventListener('DOMContentLoaded', initUI);
 })();
-
-function drawArrowShape(ctx, type, a, b, c, d) {
-  const hasXY = typeof c === 'number';
-  const x = hasXY ? a : 0;
-  const y = hasXY ? b : 0;
-  const r = hasXY ? c : (typeof a === 'number' ? a : 18);
-  const color = (hasXY ? d : b) || (typeof NOTE_MAP !== 'undefined' && NOTE_MAP[type] ? NOTE_MAP[type].color : '#38bdf8');
-
-  ctx.save();
-  if (hasXY) ctx.translate(x, y);
-
-  if (type === 'REVERSE' || type === 'REVERSE_BACK') {
-    const ccw = type === 'REVERSE_BACK';
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineWidth = Math.max(2, r * 0.22);
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.56, ccw ? Math.PI * 0.25 : -Math.PI * 0.75, ccw ? Math.PI * 1.65 : Math.PI * 0.65, ccw);
-    ctx.stroke();
-
-    const tipAngle = ccw ? Math.PI * 1.65 : Math.PI * 0.65;
-    const tx = Math.cos(tipAngle) * r * 0.56;
-    const ty = Math.sin(tipAngle) * r * 0.56;
-    ctx.translate(tx, ty);
-    ctx.rotate(tipAngle + (ccw ? -Math.PI / 2 : Math.PI / 2));
-    ctx.beginPath();
-    ctx.moveTo(0, -r * 0.28);
-    ctx.lineTo(r * 0.28, r * 0.22);
-    ctx.lineTo(-r * 0.28, r * 0.22);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-    return;
-  }
-
-  const angles = {
-    RIGHT: 0,
-    DOWN_RIGHT: Math.PI * 0.25,
-    DOWN: Math.PI * 0.5,
-    DOWN_LEFT: Math.PI * 0.75,
-    LEFT: Math.PI,
-    UP_LEFT: -Math.PI * 0.75,
-    UP: -Math.PI * 0.5,
-    UP_RIGHT: -Math.PI * 0.25
-  };
-  ctx.rotate(angles[type] !== undefined ? angles[type] : 0);
-
-  ctx.fillStyle = color;
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = Math.max(1.5, r * 0.1);
-  ctx.lineJoin = 'round';
-
-  ctx.beginPath();
-  ctx.moveTo(r * 0.72, 0);
-  ctx.lineTo(r * 0.05, -r * 0.58);
-  ctx.lineTo(r * 0.05, -r * 0.24);
-  ctx.lineTo(-r * 0.68, -r * 0.24);
-  ctx.lineTo(-r * 0.68, r * 0.24);
-  ctx.lineTo(r * 0.05, r * 0.24);
-  ctx.lineTo(r * 0.05, r * 0.58);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.restore();
-}
