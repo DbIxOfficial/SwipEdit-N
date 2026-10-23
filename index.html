@@ -496,8 +496,40 @@
     #timeline-canvas {
       display: block;
       width: 100%;
-      height: 256px;
+      height: 356px;
       cursor: crosshair;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .multi-select-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 6px 10px;
+      background: rgba(56, 189, 248, 0.11);
+      border: 1px solid rgba(56, 189, 248, 0.45);
+      border-radius: 8px;
+      font-size: 11.5px;
+    }
+    .multi-select-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .metro-timesig-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-size: 11px;
+      color: var(--text-secondary);
     }
 
     .status-footer {
@@ -1249,6 +1281,10 @@
       </button>
       <button type="button" class="btn" id="btn-undo" title="Отменить (Ctrl+Z)">↶ Отмена</button>
       <button type="button" class="btn" id="btn-redo" title="Повторить (Ctrl+Y)">↷ Повтор</button>
+            <div class="lang-switch-group" id="lang-switch-group" title="Язык интерфейса / Interface Language" style="display:inline-flex;align-items:center;background:var(--bg-0);border:1px solid var(--border-hi);border-radius:var(--radius-sm);padding:2px;gap:2px;">
+        <button type="button" class="btn btn-sm lang-btn active" data-lang="ru" style="padding:4px 8px;font-size:11px;border:none;background:var(--accent);color:#fff;font-weight:800;">RU</button>
+        <button type="button" class="btn btn-sm lang-btn" data-lang="en" style="padding:4px 8px;font-size:11px;border:none;background:transparent;color:var(--text-secondary);font-weight:800;">EN</button>
+      </div>
       <button type="button" class="btn" id="btn-export-json" title="Скачать отдельно chart.json и meta.json">
         📄 JSON
       </button>
@@ -1415,15 +1451,23 @@
             </label>
           </div>
 
-          <div class="asset-row">
-            <div>
-              <div><strong>Фон:</strong> <span id="asset-bg-status" class="asset-status">Авто-генерация 1280×720</span></div>
-              <input type="text" id="chart-bg-file" value="bg.png" style="margin-top:3px;font-size:11px;" title="Имя фонового файла в chart.json" />
+          <div class="asset-row" style="flex-direction:column;align-items:stretch;gap:6px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:170px;">
+                <div><strong>Фон (картинка / <code>.ogv</code> видео):</strong> <span id="asset-bg-status" class="asset-status">Авто-генерация 1280×720</span></div>
+                <input type="text" id="chart-bg-file" value="bg.png" style="margin-top:3px;font-size:11px;" title="Имя фонового файла в chart.json (например bg.png или bg.ogv)" />
+              </div>
+              <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                <label class="btn btn-sm btn-primary" title="Загрузить фоновую картинку (.png/.jpg/.webp) или готовый видео-фон .ogv напрямую в архив .swmap без перекодирования">
+                  🌌 Фон / .ogv
+                  <input type="file" id="input-bg-file" accept="image/*,.ogv,video/ogg,video/mp4,video/webm" hidden />
+                </label>
+                <label class="btn btn-sm" id="label-bg-preview-video" title="Опционально: если мобильный браузер не декодирует Ogg Theora (.ogv) в превью, подставь любой .mp4/.webm чисто для предпросмотра (в .swmap уйдёт твой .ogv)">
+                  👁 Превью-видео
+                  <input type="file" id="input-bg-preview-video" accept="video/*" hidden />
+                </label>
+              </div>
             </div>
-            <label class="btn btn-sm">
-              🌌 Фон
-              <input type="file" id="input-bg-file" accept="image/*" hidden />
-            </label>
           </div>
         </div>
 
@@ -1459,6 +1503,34 @@
             <input type="range" id="vol-metronome" min="0" max="200" step="5" value="110" />
             <span class="mixer-val" id="vol-metronome-val">110%</span>
           </div>
+          <div class="metro-timesig-box" title="Тактовый размер для метронома и тактовой сетки таймлайна (3/4, 4/4, 5/4, 6/8, 11/8 или любой свой N/M)">
+            <span>Размер:</span>
+            <select id="metro-timesig-preset" style="width:66px;padding:2px 4px;font-size:11px;">
+              <option value="4/4" selected>4/4</option>
+              <option value="3/4">3/4</option>
+              <option value="2/4">2/4</option>
+              <option value="5/4">5/4</option>
+              <option value="6/4">6/4</option>
+              <option value="7/4">7/4</option>
+              <option value="6/8">6/8</option>
+              <option value="7/8">7/8</option>
+              <option value="9/8">9/8</option>
+              <option value="11/8">11/8</option>
+              <option value="12/8">12/8</option>
+              <option value="custom">Свой…</option>
+            </select>
+            <input type="number" id="metro-ts-num" min="1" max="32" step="1" value="4" style="width:42px;padding:2px 4px;font-size:11px;" title="Числитель: число долей в такте" />
+            <span>/</span>
+            <select id="metro-ts-den" style="width:48px;padding:2px 4px;font-size:11px;" title="Знаменатель: длительность одной доли (4 = четверть, 8 = восьмая)">
+              <option value="2">2</option>
+              <option value="4" selected>4</option>
+              <option value="8">8</option>
+              <option value="16">16</option>
+            </select>
+          </div>
+          <label class="chk-label" title="Показывать видео-фон (.ogv) на канвасе превью (выключи на слабом смартфоне, если тормозит декодирование видео)">
+            <input type="checkbox" id="check-video-bg-preview" checked /> 🎬 Видео-фон в превью
+          </label>
         </div>
 
         <!-- Транспорт-панель -->
@@ -1500,37 +1572,7 @@
           </div>
         </div>
 
-                <!-- Сенсорный Свайп-Пад для телефонов и планшетов -->
-        <div class="section-box" style="width:100%;">
-          <div class="section-title">
-            <span>📱 Сенсорный Свайп-Пад (ставь ноты свайпом пальца)</span>
-            <label class="chk-label" title="После каждого свайпа автоматически сдвигать курсор на 1 шаг сетки вперёд">
-              <input type="checkbox" id="check-swipe-autoadvance" checked /> Авто-шаг по сетке
-            </label>
-          </div>
-          <div id="touch-swipe-pad" class="touch-swipe-pad">
-            <div class="swipe-sector" data-swipe-sector="UP_LEFT"><span class="sec-arrow">↖</span><span>UP_LEFT</span></div>
-            <div class="swipe-sector" data-swipe-sector="UP"><span class="sec-arrow">↑</span><span>UP</span></div>
-            <div class="swipe-sector" data-swipe-sector="UP_RIGHT"><span class="sec-arrow">↗</span><span>UP_RIGHT</span></div>
-            <div class="swipe-sector" data-swipe-sector="LEFT"><span class="sec-arrow">←</span><span>LEFT</span></div>
-            <div class="swipe-center-hub">
-              <span id="touch-swipe-status">Свайпни пальцем в любую из 8 сторон</span>
-            </div>
-            <div class="swipe-sector" data-swipe-sector="RIGHT"><span class="sec-arrow">→</span><span>RIGHT</span></div>
-            <div class="swipe-sector" data-swipe-sector="DOWN_LEFT"><span class="sec-arrow">↙</span><span>DOWN_LEFT</span></div>
-            <div class="swipe-sector" data-swipe-sector="DOWN"><span class="sec-arrow">↓</span><span>DOWN</span></div>
-            <div class="swipe-sector" data-swipe-sector="DOWN_RIGHT"><span class="sec-arrow">↘</span><span>DOWN_RIGHT</span></div>
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:space-between;margin-top:4px;">
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-              <button type="button" class="btn btn-sm" id="btn-touch-rev">↺ REVERSE</button>
-              <button type="button" class="btn btn-sm" id="btn-touch-rev-back">↻ REVERSE_BACK</button>
-            </div>
-            <button type="button" class="btn btn-sm btn-danger" id="btn-touch-del">⌫ Удалить ноту на курсоре</button>
-          </div>
-        </div>
-
-        <!-- Инспектор выбранной ноты или ивента -->
+                <!-- Инспектор выбранной ноты или ивента -->
         <div class="section-box" style="width:100%;">
           <div class="section-title">
             <span>Инспектор выбранного элемента</span>
@@ -1696,6 +1738,7 @@
               <option value="2">2 доли</option>
               <option value="4">1 такт (4 доли)</option>
             </select>
+    <!-- смещение -->
             <input type="color" id="hitech-phrase-color" value="#38bdf8" title="Цвет серии надписей" />
           </div>
           <label class="chk-label" style="margin:2px 0;">
@@ -1716,8 +1759,10 @@
               <option value="TEXT">Только TEXT</option>
               <option value="NOTE_SPEED">Только NOTE_SPEED</option>
               <option value="FLOW_CAM">Дорожка и камера</option>
+    <!-- панель с аналитикой -->
               <option value="FX">Только шейдеры FX_*</option>
             </select>
+        <span>Плотность чарта (NPS) и объективная сложность в баллах (SDP)</span>
           </div>
           <div style="max-height:150px;overflow-y:auto;">
             <table class="compact-table">
@@ -1737,7 +1782,7 @@
     </section>
 
 
-    <!-- смещение -->
+    <!-- ВКЛАДКА НОТ И ИНСПЕКТОРА (ДЛЯ ТАБОВОГО РЕЖИМА И МОБИЛОК) -->
     <section class="panel panel-notes-tab">
       <div class="panel-header">
         <span>🎹 Набивка нот, стаки и микро-тайминг</span>
@@ -1758,10 +1803,10 @@
       </div>
     </section>
 
-    <!-- панель с аналитикой -->
+    <!-- ПАНЕЛЬ АНАЛИТИКИ ПЛОТНОСТИ ЧАРТА (NPS) И БЕЗЛИМИТНОЙ СЛОЖНОСТИ В БАЛЛАХ -->
     <section class="panel panel-stats">
       <div class="panel-header">
-        <span>Плотность чарта (NPS) и объективная сложность в баллах (SDP)</span>
+        <span>Плотность чарта (NPS) и объективная сложность в баллах (без лимита)</span>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
           <button type="button" class="btn btn-sm" id="btn-open-sdp-modal" title="Открыть подробный разбор математической формулы SDP и расчёт по текущей карте">
             ❓ Как считается SDP (Формула)
@@ -1809,12 +1854,6 @@
           <div class="section-title">
             <span>📈 График плотности нот по секундам (клик по пику — переход к дропу)</span>
             <span id="nps-chart-hint" style="font-size:11px;color:var(--text-secondary);">1 столбик = 1 секунда</span>
-          </div>
-          <div class="nps-chart-wrap">
-            <canvas id="nps-chart-canvas" width="920" height="110"></canvas>
-          </div>
-        </div>
-      </div>
     </section>
   </main>
 
@@ -1833,7 +1872,8 @@
           <button type="button" class="touch-mode-btn" data-tl-view="compact" id="btn-tl-view-compact">📏 Компактно (1 ряд)</button>
         </div>
         <div class="touch-mode-group" title="Режим касания пальцем / мышью по таймлайну">
-          <button type="button" class="touch-mode-btn active" data-touch-mode="draw">✎ Правка (Тап = Нота/Стак)</button>
+          <button type="button" class="touch-mode-btn active" data-touch-mode="draw">✎ Правка</button>
+          <button type="button" class="touch-mode-btn" data-touch-mode="select">⬚ Выделение (Рамка/Группа)</button>
           <button type="button" class="touch-mode-btn" data-touch-mode="scroll">🖐 Прокрутка / Зум</button>
           <button type="button" class="touch-mode-btn" data-touch-mode="erase">🧹 Ластик</button>
         </div>
@@ -1842,8 +1882,27 @@
       </div>
     </div>
 
+    <div id="multi-select-bar" class="multi-select-bar" style="display:none;">
+      <div>
+        <strong id="multi-select-count">Выделено: 0</strong>
+        <span style="color:var(--text-secondary);margin-left:6px;">(перетащи любую выделенную ноту, чтобы сдвинуть всю группу)</span>
+      </div>
+      <div class="multi-select-actions">
+        <button type="button" class="btn btn-sm" data-msel-nudge="-10">-10мс</button>
+        <button type="button" class="btn btn-sm" data-msel-nudge="-1">-1мс</button>
+        <button type="button" class="btn btn-sm" data-msel-nudge="1">+1мс</button>
+        <button type="button" class="btn btn-sm" data-msel-nudge="10">+10мс</button>
+        <button type="button" class="btn btn-sm" id="btn-msel-dup" title="Дублировать выделенные ноты/ивенты вперёд на 1 долю (Ctrl+D)">⧉ Дублировать</button>
+        <button type="button" class="btn btn-sm" id="btn-msel-mirror-h" title="Отзеркалить выделенные ноты по горизонтали">⇄ Зеркало Г</button>
+        <button type="button" class="btn btn-sm" id="btn-msel-mirror-v" title="Отзеркалить выделенные ноты по вертикали">⇅ Зеркало В</button>
+        <button type="button" class="btn btn-sm" id="btn-msel-all" title="Выделить все ноты и события карты (Ctrl+A)">☑ Все</button>
+        <button type="button" class="btn btn-sm btn-danger" id="btn-msel-del" title="Удалить все выделенные элементы (Delete)">🗑 Удалить</button>
+        <button type="button" class="btn btn-sm" id="btn-msel-clear" title="Снять выделение (Esc)">✕ Сброс</button>
+      </div>
+    </div>
+
     <div id="timeline-wrap" class="timeline-wrap">
-      <canvas id="timeline-canvas" width="1280" height="256"></canvas>
+      <canvas id="timeline-canvas" width="1280" height="356"></canvas>
     </div>
 
     <div class="status-footer">
@@ -1853,7 +1912,7 @@
   </footer>
 
 
-    <!-- sdp это что? (what?) -->
+    <!-- sdp это что? (what?)-->
   <div class="cubeface-modal-backdrop" id="sdp-formula-modal" hidden>
     <div class="sdp-modal-card" role="dialog" aria-modal="true" aria-labelledby="sdp-modal-title">
       <button type="button" class="cubeface-modal-close" id="btn-close-sdp-modal" title="Закрыть">✕</button>
@@ -1910,7 +1969,7 @@
         <strong>5. Итоговый балл SDP и перевод в честные звёзды (Auto ★):</strong>
         <div class="sdp-formula-box">
           SDP = (33.5·NPS_avg + 10.8·NPS_peak3s + 6.0·mean(strain) + 3.7·P90(strain)) · L_mod + E_pts<br/>
-          Auto ★ = round_0.5(SDP / 65) &nbsp;&nbsp;(1★ ≈ 65 SDP; 1–5★ белые, 5.5–10★ красные поверх, &gt;10★ Impossible List)
+          Auto ★ = round_0.5(SDP / 65) &nbsp;&nbsp;(1★ ≈ 65 SDP; 1–5★ белые, 5.5–10★ красные поверх, &gt;10★ невозможная карта)
         </div>
       </div>
 
