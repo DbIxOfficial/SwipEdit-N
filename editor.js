@@ -427,9 +427,14 @@
       bgBytes: null,
       extraFiles: {} // прочие файлы из архива, если были
     },
-    // Объекты для предпросмотра
+    // Объекты для предпросмотра (включая .ogv видео-фоны без перекодирования)
     coverImage: null,
     bgImage: null,
+    bgVideoEl: null,
+    bgVideoUrl: null,
+    bgVideoReady: false,
+    bgIsVideo: false,
+    videoBgPreviewEnabled: true,
     // Аудио и воспроизведение
     audioCtx: null,
     audioBuffer: null,
@@ -466,7 +471,13 @@
     onsetEnv: null,                // Огибающая аудио-волны для привязки к удару (Onset)
     onsetSr: 200,
     lastStats: null,               // Кеш расчёта NPS и баллов сложности (SDP)
-    selectedItem: null, // { kind: 'note' | 'event', item: obj }
+    timeSigNum: 4,                 // Числитель тактового размера метронома (например 3, 4, 5, 6, 11)
+    timeSigDen: 4,                 // Знаменатель тактового размера метронома (2, 4, 8, 16)
+    selectedItem: null,            // { kind: 'note' | 'event', item: obj }
+    selectedNotes: new Set(),      // Множественное выделение нот на таймлайне
+    selectedEvents: new Set(),     // Множественное выделение ивентов на таймлайне
+    marqueeRect: null,             // Рамка выделения { x0, y0, x1, y1 }
+    dragGroupInitial: null,        // Снимок времён выделенной группы при перетаскивании
     draggingItem: null,
     isScrubbing: false,
     // Стек Undo / Redo
@@ -1005,8 +1016,19 @@
     ctx.rotate(rot);
     ctx.translate(-W / 2 + offX, -H / 2 + offY);
 
-    // 1. Фон карты
-    if (state.bgImage) {
+    // 1. Фон карты (Видео-фон .ogv / превью-видео, картинка или градиент)
+    if (state.videoBgPreviewEnabled && state.bgVideoEl && state.bgVideoReady && state.bgVideoEl.readyState >= 2) {
+      const vw = state.bgVideoEl.videoWidth || W;
+      const vh = state.bgVideoEl.videoHeight || H;
+      const r = Math.max(W / vw, H / vh);
+      const dw = vw * r;
+      const dh = vh * r;
+      try {
+        ctx.drawImage(state.bgVideoEl, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      } catch (_) {}
+      ctx.fillStyle = 'rgba(7, 10, 21, 0.36)';
+      ctx.fillRect(0, 0, W, H);
+    } else if (state.bgImage) {
       const iw = state.bgImage.width || W;
       const ih = state.bgImage.height || H;
       const r = Math.max(W / iw, H / ih);
@@ -1312,19 +1334,81 @@
       ctx.restore();
     }
 
-    // Точный рендер FX_DREAD по шейдеру fx_dread.gdshader (пульсирующие тени с краёв + хроматический сдвиг)
+    // Точный рендер FX_DREAD по шейдеру fx_dread.gdshader (густая тёмная дымка по краям экрана с шумом Перлина/value_noise)
     if (st.activeFx.FX_DREAD) {
       ctx.save();
-      const pulse = 0.55 + 0.25 * Math.sin(t * 9.5) + 0.15 * Math.cos(t * 23.0);
-      const dreadGrad = ctx.createRadialGradient(W / 2, H / 2, H * (0.18 * (2 - pulse)), W / 2, H / 2, W * 0.62);
-      dreadGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-      dreadGrad.addColorStop(0.55, 'rgba(35, 4, 12, 0.48)');
-      dreadGrad.addColorStop(1, 'rgba(5, 0, 4, 0.92)');
-      ctx.fillStyle = dreadGrad;
-      ctx.fillRect(0, 0, W, H);
-      ctx.strokeStyle = 'rgba(239, 68, 68, 0.35)';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(4, 4, W - 8, H - 8);
+      const p = Math.sin(Math.max(0, Math.min(1, st.activeFx.FX_DREAD.progress ?? 0.5)) * Math.PI);
+      const effStr = Math.min(1, p * 1.35);
+      if (!renderPreviewCanvas._dreadCanvas) {
+        const dc = document.createElement('canvas');
+        dc.width = 135;
+        dc.height = 240;
+        renderPreviewCanvas._dreadCanvas = dc;
+      }
+      const dc = renderPreviewCanvas._dreadCanvas;
+      const dctx = dc.getContext('2d');
+      const dw = dc.width;
+      const dh = dc.height;
+      const imgData = dctx.createImageData(dw, dh);
+      const data = imgData.data;
+      const tSec = state.currentTime || 0;
+      const breath = 0.5 + 0.5 * Math.sin(tSec * 4.4) * Math.cos(tSec * 2.83 + 1.1) + 0.25 * Math.sin(tSec * 8.3 + 2.4);
+      const reach = (0.30 + 0.085 * (breath - 0.5)) * (0.45 + 0.55 * effStr);
+      const c1 = Math.cos(tSec * 0.27), s1 = Math.sin(tSec * 0.27);
+      const c2 = Math.cos(-tSec * 0.19), s2 = Math.sin(-tSec * 0.19);
+      const hash2 = (ix, iy) => {
+        const v = Math.sin(ix * 127.1 + iy * 311.7) * 43758.5453;
+        return v - Math.floor(v);
+      };
+      const vnoise = (px, py) => {
+        const ix = Math.floor(px), iy = Math.floor(py);
+        let fx0 = px - ix, fy0 = py - iy;
+        fx0 = fx0 * fx0 * (3 - 2 * fx0);
+        fy0 = fy0 * fy0 * (3 - 2 * fy0);
+        const v00 = hash2(ix, iy), v10 = hash2(ix + 1, iy);
+        const v01 = hash2(ix, iy + 1), v11 = hash2(ix + 1, iy + 1);
+        const a = v00 + (v10 - v00) * fx0;
+        const b = v01 + (v11 - v01) * fx0;
+        return a + (b - a) * fy0;
+      };
+      const smoothstep = (e0, e1, x) => {
+        const tt = Math.max(0, Math.min(1, (x - e0) / (e1 - e0 || 1e-5)));
+        return tt * tt * (3 - 2 * tt);
+      };
+      let ptr = 0;
+      for (let y = 0; y < dh; y++) {
+        const uvy = y / dh;
+        const cy = (uvy - 0.5) * (dh / dw);
+        const edgeY = Math.min(uvy, 1 - uvy) * 0.82;
+        for (let x = 0; x < dw; x++) {
+          const uvx = x / dw;
+          const cx = uvx - 0.5;
+          const edge = Math.min(Math.min(uvx, 1 - uvx), edgeY);
+          if (edge > reach + 0.16) {
+            ptr += 4;
+            continue;
+          }
+          const r1x = (cx * c1 - cy * s1) * 5.5 + tSec * 0.18;
+          const r1y = (cx * s1 + cy * c1) * 5.5 - tSec * 0.14;
+          const r2x = (cx * c2 - cy * s2) * 2.7 - tSec * 0.11;
+          const r2y = (cx * s2 + cy * c2) * 2.7 + tSec * 0.16;
+          const n = vnoise(r1x, r1y) * 0.65 + vnoise(r2x, r2y) * 0.35;
+          const noisyEdge = edge - (n - 0.5) * 0.145 * effStr;
+          const mask = (1.0 - smoothstep(reach * 0.22, reach, noisyEdge)) * effStr;
+          if (mask > 0.004) {
+            const halo = smoothstep(0.02, 0.45, mask) * (1.0 - smoothstep(0.50, 0.95, mask));
+            const grain = (hash2(x + Math.floor(tSec * 60), y) - 0.5) * 18 * mask;
+            data[ptr]     = Math.max(0, Math.min(255, Math.round(3 + halo * 52 + grain)));
+            data[ptr + 1] = Math.max(0, Math.min(255, Math.round(2 + halo * 14 + grain)));
+            data[ptr + 2] = Math.max(0, Math.min(255, Math.round(8 + halo * 86 + grain)));
+            data[ptr + 3] = Math.max(0, Math.min(255, Math.round(Math.min(1, mask * 1.12) * 255)));
+          }
+          ptr += 4;
+        }
+      }
+      dctx.putImageData(imgData, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(dc, 0, 0, W, H);
       ctx.restore();
     }
 
@@ -1407,6 +1491,10 @@
   }
 
   // --- Отрисовка многодорожечного таймлайна (10-рядный Пиано-ролл + компактный режим) ---
+  function getTimelineLabelWidth(canvasW) {
+    return (canvasW && canvasW < 540) ? 92 : 118;
+  }
+
   function getTimelineTrackLayout(H) {
     const isPiano = state.timelineViewMode === 'pianoroll';
     if (isPiano) {
@@ -1414,10 +1502,10 @@
       const waveTop = 24;
       const waveBottom = 56;
       const notesTop = 56;
-      const notesHeight = Math.max(150, H - 56 - 78);
+      const notesHeight = Math.max(220, H - 56 - 76);
       const notesBottom = notesTop + notesHeight;
       const textSpeedTop = notesBottom;
-      const textSpeedBottom = notesBottom + 38;
+      const textSpeedBottom = notesBottom + 36;
       const fxTop = textSpeedBottom;
       const fxBottom = H;
       const laneH = notesHeight / NOTE_TYPES.length;
@@ -1441,11 +1529,11 @@
       waveTop: 26,
       waveBottom: 74,
       notesTop: 74,
-      notesBottom: 136,
-      laneH: 62,
-      textSpeedTop: 136,
-      textSpeedBottom: 184,
-      fxTop: 184,
+      notesBottom: 142,
+      laneH: 68,
+      textSpeedTop: 142,
+      textSpeedBottom: 188,
+      fxTop: 188,
       fxBottom: H
     };
   }
@@ -1458,17 +1546,43 @@
     return Math.max(0, (x - labelWidth + state.timelineScrollX) / state.zoomPxPerSec);
   }
 
+  function updateMultiSelectBarUI() {
+    const bar = document.getElementById('multi-select-bar');
+    const cntEl = document.getElementById('multi-select-count');
+    if (!bar || !cntEl) return;
+    const nCnt = state.selectedNotes ? state.selectedNotes.size : 0;
+    const eCnt = state.selectedEvents ? state.selectedEvents.size : 0;
+    const total = nCnt + eCnt;
+    if (total >= 2 || state.timelineTouchMode === 'select') {
+      bar.style.display = 'flex';
+      cntEl.textContent = `Выделено: ${nCnt} нот, ${eCnt} событий`;
+    } else {
+      bar.style.display = 'none';
+    }
+  }
+
   function renderTimelineCanvas() {
     const canvas = document.getElementById('timeline-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const desiredH = state.timelineViewMode === 'pianoroll' ? 316 : 230;
+
+    const wrap = canvas.parentElement;
+    const cssW = Math.max(320, Math.round((wrap && wrap.clientWidth) || canvas.clientWidth || 360));
+    const desiredH = state.timelineViewMode === 'pianoroll' ? 356 : 236;
+
+    if (canvas.style.height !== `${desiredH}px`) {
+      canvas.style.height = `${desiredH}px`;
+    }
+    if (canvas.width !== cssW) {
+      canvas.width = cssW;
+    }
     if (canvas.height !== desiredH) {
       canvas.height = desiredH;
     }
+
     const W = canvas.width;
     const H = canvas.height;
-    const labelW = 118;
+    const labelW = getTimelineLabelWidth(W);
     const layout = getTimelineTrackLayout(H);
 
     ctx.clearRect(0, 0, W, H);
@@ -1494,7 +1608,7 @@
           ctx.fillStyle = 'rgba(56, 189, 248, 0.07)';
           ctx.fillRect(labelW, ry, W - labelW, layout.laneH);
         }
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.11)';
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(labelW, ry);
@@ -1509,16 +1623,19 @@
     ctx.fillStyle = '#0a0f1c';
     ctx.fillRect(labelW, layout.fxTop, W - labelW, layout.fxBottom - layout.fxTop);
 
-    // 1. Сетка BPM и линейка времени
+    // 1. Сетка BPM и линейка времени (с учётом выбранного тактового размера N/M)
     const startSec = Math.max(0, xToTime(labelW, labelW));
     const endSec = xToTime(W, labelW);
     const tp = getActiveTimingAt(startSec);
-    const beatSec = 60 / tp.bpm;
-    const subDiv = (state.snapDivisor && state.snapDivisor > 0) ? (state.snapDivisor / 4) : 1;
-    const stepSec = beatSec / subDiv;
+    const quarterSec = 60 / tp.bpm;
+    const tsNum = Math.max(1, Number(state.timeSigNum) || 4);
+    const tsDen = Math.max(1, Number(state.timeSigDen) || 4);
+    const sigBeatSec = quarterSec * (4 / tsDen);
+    const subDiv = (state.snapDivisor && state.snapDivisor > 0) ? Math.max(1, state.snapDivisor / 4) : 1;
+    const stepSec = sigBeatSec / subDiv;
 
     const firstStepIdx = Math.floor((startSec - tp.time) / stepSec);
-    const maxLines = 600;
+    const maxLines = 650;
     let lineCount = 0;
 
     for (let idx = firstStepIdx; lineCount < maxLines; idx++, lineCount++) {
@@ -1529,15 +1646,17 @@
       const x = timeToX(t, labelW);
       if (x < labelW) continue;
 
-      const isBar = idx % (4 * subDiv) === 0;
-      const isBeat = idx % subDiv === 0;
+      const stepsPerBar = Math.max(1, Math.round(tsNum * subDiv));
+      const stepsPerBeat = Math.max(1, Math.round(subDiv));
+      const isBar = ((idx % stepsPerBar) + stepsPerBar) % stepsPerBar === 0;
+      const isBeat = ((idx % stepsPerBeat) + stepsPerBeat) % stepsPerBeat === 0;
 
       ctx.beginPath();
       ctx.moveTo(x, layout.rulerBottom);
       ctx.lineTo(x, H);
       if (isBar) {
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.32)';
-        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.36)';
+        ctx.lineWidth = 1.3;
       } else if (isBeat) {
         ctx.strokeStyle = 'rgba(148, 163, 184, 0.16)';
         ctx.lineWidth = 1;
@@ -1547,10 +1666,12 @@
       }
       ctx.stroke();
 
-      if (isBar || (isBeat && state.zoomPxPerSec >= 140)) {
+      if (isBar || (isBeat && state.zoomPxPerSec >= 150)) {
+        const barNum = Math.floor(idx / stepsPerBar) + 1;
         ctx.fillStyle = isBar ? '#e2e8f0' : '#64748b';
         ctx.font = isBar ? '700 10px ui-monospace, monospace' : '500 9px ui-monospace, monospace';
-        ctx.fillText(`${t.toFixed(2)}s`, x + 3, 16);
+        const txt = isBar ? `${state.lang === 'en' ? 'B' : 'Т'}${barNum} (${t.toFixed(2)}s)` : `${t.toFixed(2)}s`;
+        ctx.fillText(txt, x + 3, 16);
       }
     }
 
@@ -1599,25 +1720,41 @@
         }
         for (let k = gIdx; k < gj; k++) {
           const n = notes[k];
-          const isSel = state.selectedItem && state.selectedItem.kind === 'note' && state.selectedItem.item === n;
+          const isSingleSel = state.selectedItem && state.selectedItem.kind === 'note' && state.selectedItem.item === n;
+          const isMultiSel = state.selectedNotes && state.selectedNotes.has(n);
+          const isSel = isSingleSel || isMultiSel;
+
           let ny = notesMidY;
           let rad = 14;
           if (layout.isPiano) {
             const rowIdx = Math.max(0, NOTE_TYPES.findIndex(nt => nt.id === n.type));
             ny = layout.notesTop + (rowIdx + 0.5) * layout.laneH;
-            rad = Math.min(10.5, layout.laneH * 0.44);
+            rad = Math.min(11.5, layout.laneH * 0.45);
           } else {
             const slotOffset = gSize > 1 ? ((k - gIdx) - (gSize - 1) / 2) * 16 : 0;
             ny = notesMidY + slotOffset;
-            rad = gSize > 1 ? 11.5 : 14;
+            rad = gSize > 1 ? 11 : 14;
           }
+
+          if (isSel) {
+            ctx.save();
+            ctx.strokeStyle = isMultiSel ? '#38bdf8' : '#fde047';
+            ctx.fillStyle = isMultiSel ? 'rgba(56, 189, 248, 0.22)' : 'rgba(253, 224, 71, 0.18)';
+            ctx.lineWidth = 2.4;
+            ctx.beginPath();
+            ctx.arc(gx, ny, rad + 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+          }
+
           drawSwipeNote(ctx, gx, ny, rad, n.type, 1, isSel);
         }
       }
       gIdx = gj;
     }
 
-    // 4. Отрисовка событий (TEXT / NOTE_SPEED и FX / Модификаторы)
+    // 4. Отрисовка событий (TEXT / NOTE_SPEED и FX / Камера)
     const events = state.chart.events;
     for (let i = 0; i < events.length; i++) {
       const ev = events[i];
@@ -1637,12 +1774,14 @@
       const pillH = Math.min(20, (bandH - 8) / 2);
       const py = bandTop + 4 + laneIdx * (pillH + 3);
 
-      const isSel = state.selectedItem && state.selectedItem.kind === 'event' && state.selectedItem.item === ev;
+      const isSingleSel = state.selectedItem && state.selectedItem.kind === 'event' && state.selectedItem.item === ev;
+      const isMultiSel = state.selectedEvents && state.selectedEvents.has(ev);
+      const isSel = isSingleSel || isMultiSel;
 
       ctx.save();
       ctx.fillStyle = def.color + (dur > 0 ? '44' : '88');
-      ctx.strokeStyle = isSel ? '#fde047' : def.color;
-      ctx.lineWidth = isSel ? 2.2 : 1.2;
+      ctx.strokeStyle = isMultiSel ? '#38bdf8' : (isSel ? '#fde047' : def.color);
+      ctx.lineWidth = isSel ? 2.4 : 1.2;
 
       ctx.beginPath();
       ctx.roundRect(x, py, wPx, pillH, 4);
@@ -1665,6 +1804,22 @@
       ctx.restore();
     }
 
+    // 4.5 Рамка множественного выделения (Marquee box)
+    if (state.marqueeRect) {
+      const rx = Math.min(state.marqueeRect.x0, state.marqueeRect.x1);
+      const ry = Math.min(state.marqueeRect.y0, state.marqueeRect.y1);
+      const rw = Math.abs(state.marqueeRect.x1 - state.marqueeRect.x0);
+      const rh = Math.abs(state.marqueeRect.y1 - state.marqueeRect.y0);
+      ctx.save();
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.16)';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 3]);
+      ctx.fillRect(rx, ry, rw, rh);
+      ctx.strokeRect(rx, ry, rw, rh);
+      ctx.restore();
+    }
+
     // 5. Разделители дорожек и левая панель заголовков
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, labelW, H);
@@ -1683,33 +1838,40 @@
     ctx.lineTo(labelW, H);
     ctx.stroke();
 
+    const compactLabels = labelW < 105;
     ctx.fillStyle = '#94a3b8';
-    ctx.font = '700 11px system-ui, sans-serif';
-    ctx.fillText('ТАКТЫ / СЕК', 10, 16);
+    ctx.font = compactLabels ? '700 9.5px system-ui, sans-serif' : '700 11px system-ui, sans-serif';
+    ctx.fillText(state.lang === 'en' ? (compactLabels ? `BAR (${state.timeSigNum}/${state.timeSigDen})` : `BARS (${state.timeSigNum}/${state.timeSigDen})`) : (compactLabels ? `ТАКТ (${state.timeSigNum}/${state.timeSigDen})` : `ТАКТЫ (${state.timeSigNum}/${state.timeSigDen})`), 6, 16);
     ctx.fillStyle = '#38bdf8';
-    ctx.fillText('АУДИО ВОЛНА', 10, (layout.waveTop + layout.waveBottom) / 2 + 4);
+    ctx.fillText(state.lang === 'en' ? (compactLabels ? 'WAVE' : 'AUDIO WAVE') : (compactLabels ? 'ВОЛНА' : 'АУДИО ВОЛНА'), 6, (layout.waveTop + layout.waveBottom) / 2 + 4);
 
     if (layout.isPiano) {
+      const shortNames = {
+        UP: 'UP', DOWN: 'DOWN', LEFT: 'LEFT', RIGHT: 'RIGHT',
+        UP_LEFT: 'UP_L', UP_RIGHT: 'UP_R', DOWN_LEFT: 'DN_L', DOWN_RIGHT: 'DN_R',
+        REVERSE: 'REV', REVERSE_BACK: 'REV_B'
+      };
       for (let r = 0; r < NOTE_TYPES.length; r++) {
         const nt = NOTE_TYPES[r];
         const ry = layout.notesTop + r * layout.laneH;
         ctx.fillStyle = nt.id === state.activeNoteType ? 'rgba(56, 189, 248, 0.16)' : 'transparent';
         ctx.fillRect(0, ry, labelW - 1, layout.laneH);
         ctx.fillStyle = nt.color;
-        ctx.font = '700 10px ui-monospace, monospace';
-        ctx.fillText(`${nt.short} ${nt.id}`, 8, ry + layout.laneH / 2 + 3.5);
+        ctx.font = compactLabels ? '700 9.5px ui-monospace, monospace' : '700 10px ui-monospace, monospace';
+        const lbl = compactLabels ? `${nt.short} ${shortNames[nt.id] || nt.id}` : `${nt.short} ${nt.id}`;
+        ctx.fillText(lbl, 6, ry + layout.laneH / 2 + 3.5);
       }
     } else {
       ctx.fillStyle = '#f43f5e';
-      ctx.font = '700 11px system-ui, sans-serif';
-      ctx.fillText('НОТЫ / СТАКИ', 10, (layout.notesTop + layout.notesBottom) / 2 + 4);
+      ctx.font = compactLabels ? '700 9.5px system-ui, sans-serif' : '700 11px system-ui, sans-serif';
+      ctx.fillText(state.lang === 'en' ? (compactLabels ? 'NOTES' : 'NOTES / STACKS') : (compactLabels ? 'НОТЫ' : 'НОТЫ / СТАКИ'), 6, (layout.notesTop + layout.notesBottom) / 2 + 4);
     }
 
     ctx.fillStyle = '#facc15';
-    ctx.font = '700 11px system-ui, sans-serif';
-    ctx.fillText('TEXT / SPEED', 10, (layout.textSpeedTop + layout.textSpeedBottom) / 2 + 4);
+    ctx.font = compactLabels ? '700 9.5px system-ui, sans-serif' : '700 11px system-ui, sans-serif';
+    ctx.fillText('TEXT / SPEED', 6, (layout.textSpeedTop + layout.textSpeedBottom) / 2 + 4);
     ctx.fillStyle = '#a855f7';
-    ctx.fillText('FX / КАМЕРА', 10, (layout.fxTop + layout.fxBottom) / 2 + 4);
+    ctx.fillText(state.lang === 'en' ? 'FX / CAMERA' : 'FX / КАМЕРА', 6, (layout.fxTop + layout.fxBottom) / 2 + 4);
 
     // 6. Красный курсор текущей позиции (Playhead)
     const playheadX = timeToX(state.currentTime, labelW);
@@ -1731,6 +1893,8 @@
       ctx.fill();
       ctx.restore();
     }
+
+    updateMultiSelectBarUI();
   }
 
   function hashCode(str) {
@@ -1746,7 +1910,7 @@
   function hitTestTimeline(mx, my) {
     const canvas = document.getElementById('timeline-canvas');
     if (!canvas) return null;
-    const labelW = 118;
+    const labelW = getTimelineLabelWidth(canvas.width);
     const layout = getTimelineTrackLayout(canvas.height);
 
     if (mx < labelW) {
@@ -1944,8 +2108,31 @@
   }
 
   function deleteSelectedItem() {
-    if (!state.selectedItem) return;
+    const hasMulti = (state.selectedNotes && state.selectedNotes.size > 0) || (state.selectedEvents && state.selectedEvents.size > 0);
+    if (!hasMulti && !state.selectedItem) return;
     pushUndo();
+
+    if (hasMulti) {
+      const revTimesToClean = [];
+      for (const n of state.selectedNotes) {
+        if (n.type === 'REVERSE' || n.type === 'REVERSE_BACK') {
+          revTimesToClean.push({ time: n.time, type: n.type });
+        }
+      }
+      state.chart.notes = state.chart.notes.filter(n => !state.selectedNotes.has(n));
+      state.chart.events = state.chart.events.filter(ev => !state.selectedEvents.has(ev));
+      for (const r of revTimesToClean) {
+        syncReverseFlowEvent(r.time, null, r.type, true);
+      }
+      const delCount = state.selectedNotes.size + state.selectedEvents.size;
+      state.selectedNotes.clear();
+      state.selectedEvents.clear();
+      state.selectedItem = null;
+      refreshAllViews();
+      setStatus(`Удалено выделенных элементов: ${delCount}`);
+      return;
+    }
+
     const { kind, item } = state.selectedItem;
     if (kind === 'note') {
       const idx = state.chart.notes.indexOf(item);
@@ -1962,15 +2149,94 @@
     setStatus('Элемент удалён');
   }
 
-  function mirrorAllNotes(axis) {
-    if (!state.chart.notes.length) return;
+  function nudgeSelectedItems(deltaSec) {
+    const notesToMove = state.selectedNotes && state.selectedNotes.size > 0
+      ? Array.from(state.selectedNotes)
+      : (state.selectedItem && state.selectedItem.kind === 'note' ? [state.selectedItem.item] : []);
+    const eventsToMove = state.selectedEvents && state.selectedEvents.size > 0
+      ? Array.from(state.selectedEvents)
+      : (state.selectedItem && state.selectedItem.kind === 'event' ? [state.selectedItem.item] : []);
+
+    if (!notesToMove.length && !eventsToMove.length) {
+      setCurrentTime(roundTime(Math.max(0, state.currentTime + deltaSec)));
+      return;
+    }
+
+    pushUndo();
+    for (const n of notesToMove) {
+      const prevT = n.time;
+      n.time = roundTime(Math.max(0, n.time + deltaSec));
+      if (n.type === 'REVERSE' || n.type === 'REVERSE_BACK') {
+        syncReverseFlowEvent(prevT, n.time, n.type, false);
+      }
+    }
+    for (const ev of eventsToMove) {
+      ev.time = roundTime(Math.max(0, ev.time + deltaSec));
+    }
+    sortChart();
+    refreshAllViews();
+    setStatus(`Сдвинуто: ${notesToMove.length} нот, ${eventsToMove.length} ив. на ${deltaSec > 0 ? '+' : ''}${Math.round(deltaSec * 1000)} мс`);
+  }
+
+  function duplicateSelectedItems() {
+    const notesToDup = state.selectedNotes && state.selectedNotes.size > 0
+      ? Array.from(state.selectedNotes)
+      : (state.selectedItem && state.selectedItem.kind === 'note' ? [state.selectedItem.item] : []);
+    const eventsToDup = state.selectedEvents && state.selectedEvents.size > 0
+      ? Array.from(state.selectedEvents)
+      : (state.selectedItem && state.selectedItem.kind === 'event' ? [state.selectedItem.item] : []);
+
+    if (!notesToDup.length && !eventsToDup.length) {
+      setStatus('Сначала выдели одну или несколько нот/событий для дублирования');
+      return;
+    }
+
+    pushUndo();
+    const tp = getActiveTimingAt(state.currentTime);
+    const beatShift = 60 / (tp.bpm || 120);
+    let minT = Infinity;
+    let maxT = -Infinity;
+    for (const n of notesToDup) { if (n.time < minT) minT = n.time; if (n.time > maxT) maxT = n.time; }
+    for (const e of eventsToDup) { if (e.time < minT) minT = e.time; if (e.time > maxT) maxT = e.time; }
+    const span = Math.max(beatShift, roundTime((maxT - minT) + beatShift));
+
+    const newNotes = [];
+    const newEvents = [];
+    for (const n of notesToDup) {
+      const copyN = { time: roundTime(n.time + span), type: n.type };
+      state.chart.notes.push(copyN);
+      newNotes.push(copyN);
+      if (copyN.type === 'REVERSE' || copyN.type === 'REVERSE_BACK') {
+        syncReverseFlowEvent(copyN.time, copyN.time, copyN.type, false);
+      }
+    }
+    for (const ev of eventsToDup) {
+      const copyE = JSON.parse(JSON.stringify(ev));
+      copyE.time = roundTime(ev.time + span);
+      state.chart.events.push(copyE);
+      newEvents.push(copyE);
+    }
+    sortChart();
+    state.selectedNotes = new Set(newNotes);
+    state.selectedEvents = new Set(newEvents);
+    state.selectedItem = newNotes[0] ? { kind: 'note', item: newNotes[0] } : (newEvents[0] ? { kind: 'event', item: newEvents[0] } : null);
+    refreshAllViews();
+    setStatus(`Скопировано вперёд (+${span.toFixed(3)}с): ${newNotes.length} нот, ${newEvents.length} ивентов`);
+  }
+
+  function mirrorAllNotes(axis, onlySelected = false) {
+    const targetNotes = (onlySelected && state.selectedNotes && state.selectedNotes.size > 0)
+      ? Array.from(state.selectedNotes)
+      : state.chart.notes;
+    if (!targetNotes.length) return;
     pushUndo();
     const map = axis === 'H' ? MIRROR_H : MIRROR_V;
-    for (const n of state.chart.notes) {
+    for (const n of targetNotes) {
       if (map[n.type]) n.type = map[n.type];
     }
     refreshAllViews();
-    setStatus(axis === 'H' ? 'Все ноты отзеркалены по горизонтали (← ↔ →)' : 'Все ноты отзеркалены по вертикали (↑ ↔ ↓)');
+    const scopeTxt = (onlySelected && state.selectedNotes && state.selectedNotes.size > 0) ? `Выделенные ноты (${targetNotes.length})` : 'Все ноты';
+    setStatus(axis === 'H' ? `${scopeTxt} отзеркалены по горизонтали (← ↔ →)` : `${scopeTxt} отзеркалены по вертикали (↑ ↔ ↓)`);
   }
 
   // --- Генератор ритмичных надписей в стиле карты Hi-Tech ---
@@ -2678,7 +2944,15 @@
   function updateTimeReadout() {
     const el = document.getElementById('time-readout');
     if (el) {
-      el.textContent = `${formatTime(state.currentTime)} / ${formatTime(state.duration)}`;
+      const tp = getActiveTimingAt(state.currentTime);
+      const quarterSec = 60 / (tp.bpm || 120);
+      const tsNum = Math.max(1, Number(state.timeSigNum) || 4);
+      const tsDen = Math.max(1, Number(state.timeSigDen) || 4);
+      const sigBeatSec = quarterSec * (4 / tsDen);
+      const totalBeats = Math.max(0, (state.currentTime - tp.time) / sigBeatSec);
+      const barIdx = Math.floor(totalBeats / tsNum) + 1;
+      const beatIdx = (Math.floor(totalBeats) % tsNum) + 1;
+      el.textContent = `${formatTime(state.currentTime)} / ${formatTime(state.duration)} | Такт ${barIdx}.${beatIdx} (${tsNum}/${tsDen})`;
     }
   }
 
@@ -2689,10 +2963,16 @@
         state.audioEl.currentTime = state.currentTime;
       } catch (_) {}
     }
+    if (state.bgVideoEl && state.bgVideoReady && state.videoBgPreviewEnabled && !keepPlaying) {
+      try {
+        const vDur = state.bgVideoEl.duration;
+        state.bgVideoEl.currentTime = (vDur && isFinite(vDur) && vDur > 0) ? (state.currentTime % vDur) : state.currentTime;
+      } catch (_) {}
+    }
     // Автоскролл таймлайна, если курсор вышел за правую/левую границу
     const canvas = document.getElementById('timeline-canvas');
     if (canvas) {
-      const labelW = 118;
+      const labelW = getTimelineLabelWidth(canvas.width);
       const viewW = canvas.width - labelW;
       const playX = state.currentTime * state.zoomPxPerSec - state.timelineScrollX;
       if (playX > viewW * 0.88) {
@@ -2927,6 +3207,14 @@
           state.assets.bgBytes = bytes;
           state.bgImage = img;
           state.chart.backgroundFile = fileName || 'bg.png';
+          state.assets.bgBytes = bytes;
+          state.bgImage = img;
+          state.bgIsVideo = false;
+          state.bgVideoReady = false;
+          if (state.bgVideoEl) {
+            try { state.bgVideoEl.pause(); } catch (_) {}
+          }
+          state.chart.backgroundFile = fileName || 'bg.png';
           const stEl = document.getElementById('asset-bg-status');
           if (stEl) stEl.textContent = `${state.chart.backgroundFile} (${img.width}×${img.height})`;
         }
@@ -2935,6 +3223,76 @@
       };
       img.onerror = () => resolve();
       img.src = url;
+    });
+  }
+
+  function loadVideoBackgroundFromBytes(bytes, fileName, previewOnly = false) {
+    return new Promise((resolve) => {
+      if (!previewOnly) {
+        state.assets.bgBytes = bytes;
+        state.bgIsVideo = true;
+        const cleanName = (fileName && /\.ogv$/i.test(fileName)) ? fileName : 'bg.ogv';
+        state.chart.backgroundFile = cleanName;
+        const bgInput = document.getElementById('chart-bg-file');
+        if (bgInput) bgInput.value = cleanName;
+      }
+
+      if (!state.bgVideoEl) {
+        const v = document.createElement('video');
+        v.muted = true;
+        v.loop = true;
+        v.playsInline = true;
+        v.preload = 'auto';
+        state.bgVideoEl = v;
+      }
+
+      if (state.bgVideoUrl) {
+        URL.revokeObjectURL(state.bgVideoUrl);
+      }
+
+      const ext = ((fileName || 'bg.ogv').split('.').pop() || 'ogv').toLowerCase();
+      const mime = ext === 'mp4' ? 'video/mp4' : ext === 'webm' ? 'video/webm' : 'video/ogg';
+      const blob = new Blob([bytes], { type: mime });
+      const url = URL.createObjectURL(blob);
+      state.bgVideoUrl = url;
+
+      const v = state.bgVideoEl;
+      const sizeMb = (bytes.byteLength / 1024 / 1024).toFixed(2);
+      const stEl = document.getElementById('asset-bg-status');
+
+      const onReady = () => {
+        v.removeEventListener('loadeddata', onReady);
+        v.removeEventListener('error', onErr);
+        state.bgVideoReady = true;
+        try {
+          v.currentTime = state.currentTime;
+          v.playbackRate = state.playbackRate;
+          if (state.isPlaying && state.videoBgPreviewEnabled) v.play().catch(() => {});
+        } catch (_) {}
+        if (stEl) {
+          stEl.textContent = previewOnly
+            ? `🎬 ${state.chart.backgroundFile} + превью ${fileName} (${v.videoWidth}×${v.videoHeight})`
+            : `🎬 ${state.chart.backgroundFile} (${v.videoWidth}×${v.videoHeight}, ${sizeMb} МБ)`;
+        }
+        renderPreviewCanvas();
+        resolve(true);
+      };
+
+      const onErr = () => {
+        v.removeEventListener('loadeddata', onReady);
+        v.removeEventListener('error', onErr);
+        state.bgVideoReady = false;
+        if (stEl) {
+          stEl.textContent = `🎬 ${state.chart.backgroundFile} (${sizeMb} МБ, упакован в .swmap; для превью в этом браузере можно выбрать 👁 Превью-видео)`;
+        }
+        renderPreviewCanvas();
+        resolve(false);
+      };
+
+      v.addEventListener('loadeddata', onReady);
+      v.addEventListener('error', onErr);
+      v.src = url;
+      v.load();
     });
   }
 
@@ -3005,8 +3363,12 @@
           await loadAudioFromBytes(bytes, name);
         } else if (name === coverName || /^cover\./i.test(name)) {
           await loadImageFromBytes(bytes, 'cover', name);
-        } else if (name === bgName || /^bg\./i.test(name)) {
-          await loadImageFromBytes(bytes, 'bg', name);
+        } else if (name === bgName || /^bg\./i.test(name) || /\.ogv$/i.test(name)) {
+          if (/\.ogv$/i.test(name)) {
+            await loadVideoBackgroundFromBytes(bytes, name, false);
+          } else {
+            await loadImageFromBytes(bytes, 'bg', name);
+          }
         } else {
           state.assets.extraFiles[name] = bytes;
         }
@@ -3134,9 +3496,10 @@
       const bgBytes = state.assets.bgBytes || await generatePlaceholderPngBytes(1280, 720, state.meta.menu_color, '');
       const audioBytes = state.assets.audioBytes || generateSilentWavBytes(Math.max(10, state.duration));
 
+      const isOgvBg = /\.ogv$/i.test(chartOut.backgroundFile);
       const entries = [
         { name: chartOut.coverFile, data: coverBytes, compress: false },
-        { name: chartOut.backgroundFile, data: bgBytes, compress: true },
+        { name: chartOut.backgroundFile, data: bgBytes, compress: !isOgvBg },
         { name: 'chart.json', data: JSON.stringify(chartOut, null, 2), compress: false },
         { name: 'meta.json', data: JSON.stringify(metaOut, null, 2), compress: false },
         { name: chartOut.audioFile, data: audioBytes, compress: false }
@@ -3382,15 +3745,30 @@
         }
       }
 
-      // Проверяем пересечение долей для метронома
+      // Проверяем пересечение долей для метронома (с учётом тактового размера N/M: 3/4, 4/4, 5/4, 6/8, 11/8 и т.д.)
       if (state.metronomeEnabled) {
         const tp = getActiveTimingAt(state.currentTime);
-        const beatSec = 60 / tp.bpm;
-        const prevBeat = Math.floor((prevTime - tp.time) / beatSec);
-        const curBeat = Math.floor((state.currentTime - tp.time) / beatSec);
+        const quarterSec = 60 / (tp.bpm || 120);
+        const tsNum = Math.max(1, Number(state.timeSigNum) || 4);
+        const tsDen = Math.max(1, Number(state.timeSigDen) || 4);
+        const sigBeatSec = quarterSec * (4 / tsDen);
+        const prevBeat = Math.floor((prevTime - tp.time) / sigBeatSec);
+        const curBeat = Math.floor((state.currentTime - tp.time) / sigBeatSec);
         if (curBeat > prevBeat && state.currentTime >= tp.time) {
-          const isBar = curBeat % 4 === 0;
-          playTick(isBar ? 1560 : 880, isBar ? 0.22 : 0.16, 0.045, 'sine', 'metro');
+          const beatInBar = ((curBeat % tsNum) + tsNum) % tsNum;
+          const isDownbeat = beatInBar === 0;
+          const isCompoundSubAccent = !isDownbeat && tsDen === 8 && (tsNum % 3 === 0) && (beatInBar % 3 === 0);
+          const freq = isDownbeat ? 1580 : (isCompoundSubAccent ? 1140 : 880);
+          const gain = isDownbeat ? 0.24 : (isCompoundSubAccent ? 0.19 : 0.15);
+          playTick(freq, gain, 0.045, 'sine', 'metro');
+        }
+      }
+
+      if (state.bgVideoEl && state.bgVideoReady && state.videoBgPreviewEnabled) {
+        const vDur = state.bgVideoEl.duration;
+        const targetVT = (vDur && isFinite(vDur) && vDur > 0) ? (state.currentTime % vDur) : state.currentTime;
+        if (Math.abs(state.bgVideoEl.currentTime - targetVT) > 0.28) {
+          try { state.bgVideoEl.currentTime = targetVT; } catch (_) {}
         }
       }
 
@@ -3412,6 +3790,14 @@
       state.audioEl.volume = Math.max(0, Math.min(1, state.bgmVolume !== undefined ? state.bgmVolume : 0.70));
       state.audioEl.play().catch(() => {});
     }
+    if (state.bgVideoEl && state.bgVideoReady && state.videoBgPreviewEnabled) {
+      try {
+        const vDur = state.bgVideoEl.duration;
+        state.bgVideoEl.currentTime = (vDur && isFinite(vDur) && vDur > 0) ? (state.currentTime % vDur) : state.currentTime;
+        state.bgVideoEl.playbackRate = state.playbackRate;
+        state.bgVideoEl.play().catch(() => {});
+      } catch (_) {}
+    }
   }
 
   function pausePlayback() {
@@ -3420,6 +3806,9 @@
     if (btn) btn.textContent = '▶ Пуск';
     if (state.audioEl && !state.audioEl.paused) {
       state.audioEl.pause();
+    }
+    if (state.bgVideoEl && !state.bgVideoEl.paused) {
+      try { state.bgVideoEl.pause(); } catch (_) {}
     }
   }
 
@@ -3643,22 +4032,37 @@
       const f = e.target.files && e.target.files[0];
       if (!f) return;
       const buf = await f.arrayBuffer();
-      if (/\.(ctex|stex)$/i.test(f.name) && window.SwmapZip && window.SwmapZip.convertGodotTexture) {
-        try {
-          const conv = await window.SwmapZip.convertGodotTexture(buf, 'bg.png');
-          await loadImageFromBytes(conv.bytes, 'bg', 'bg.png');
-          syncMetaAndChartInputs();
-          setStatus(`Сконвертирован Godot ${f.name} (${conv.sourceFormat} ${conv.width}×${conv.height}) → bg.png`);
-          return;
-        } catch (err) {
-          setStatus(`Ошибка конвертации .ctex: ${err.message}`);
-          return;
-        }
+      const bytes = new Uint8Array(buf);
+      if (/\.(ogv|mp4|webm)$/i.test(f.name) || (f.type && f.type.startsWith('video/'))) {
+        const isOgv = /\.ogv$/i.test(f.name);
+        const targetBgName = isOgv ? 'bg.ogv' : f.name;
+        await loadVideoBackgroundFromBytes(bytes, targetBgName, false);
+        syncMetaAndChartInputs();
+        setStatus(
+          isOgv
+            ? `Загружен видео-фон ${f.name} → сохранён как ${targetBgName} в .swmap без перекодирования`
+            : `Загружено видео ${f.name} для превью (в самой игре Swipetava поддерживается .ogv)`
+        );
+        e.target.value = '';
+        return;
       }
-      await loadImageFromBytes(new Uint8Array(buf), 'bg', f.name);
+      await loadImageFromBytes(bytes, 'bg', f.name);
       syncMetaAndChartInputs();
       setStatus(`Загружен фон ${f.name}`);
+      e.target.value = '';
     });
+
+    const bgPreviewVidInput = document.getElementById('input-bg-preview-video');
+    if (bgPreviewVidInput) {
+      bgPreviewVidInput.addEventListener('change', async (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f) return;
+        const buf = await f.arrayBuffer();
+        await loadVideoBackgroundFromBytes(new Uint8Array(buf), f.name, true);
+        setStatus(`Подключено превью-видео ${f.name} (в архиве .swmap остаётся ${state.chart.backgroundFile})`);
+        e.target.value = '';
+      });
+    }
 
     // Поддержка Drag-and-Drop .swmap прямо на окно браузера
     window.addEventListener('dragover', (e) => {
@@ -3740,11 +4144,122 @@
     const tlCanvas = document.getElementById('timeline-canvas');
     tlCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
+    // --- Помощники для группового выделения и перетаскивания нот/событий ---
+    function startGroupDragForHit(hit) {
+      pushUndo();
+      state.selectedItem = hit;
+      if (hit.kind === 'note') {
+        if (!state.selectedNotes.has(hit.item)) {
+          state.selectedNotes.clear();
+          state.selectedEvents.clear();
+          state.selectedNotes.add(hit.item);
+        }
+      } else if (hit.kind === 'event') {
+        if (!state.selectedEvents.has(hit.item)) {
+          state.selectedNotes.clear();
+          state.selectedEvents.clear();
+          state.selectedEvents.add(hit.item);
+        }
+      }
+
+      const items = [];
+      for (const n of state.selectedNotes) {
+        items.push({ kind: 'note', item: n, startTime: n.time });
+      }
+      for (const ev of state.selectedEvents) {
+        items.push({ kind: 'event', item: ev, startTime: ev.time });
+      }
+      state.dragGroupInitial = {
+        anchorItem: hit.item,
+        anchorStartTime: hit.item.time,
+        items
+      };
+      state.draggingItem = hit;
+    }
+
+    function applyGroupDragAtTime(newAnchorTime) {
+      if (!state.dragGroupInitial || !state.draggingItem) return;
+      const group = state.dragGroupInitial;
+      let minStart = Infinity;
+      for (const entry of group.items) {
+        if (entry.startTime < minStart) minStart = entry.startTime;
+      }
+      let delta = newAnchorTime - group.anchorStartTime;
+      if (minStart + delta < 0) {
+        delta = -minStart;
+      }
+      for (const entry of group.items) {
+        const prevT = entry.item.time;
+        const nextT = roundTime(Math.max(0, entry.startTime + delta));
+        entry.item.time = nextT;
+        if (entry.kind === 'note' && (entry.item.type === 'REVERSE' || entry.item.type === 'REVERSE_BACK')) {
+          syncReverseFlowEvent(prevT, nextT, entry.item.type, false);
+        }
+      }
+      sortChart();
+      renderPreviewCanvas();
+      renderTimelineCanvas();
+      renderInspector();
+      renderEventsList();
+    }
+
+    function finalizeMarqueeSelection(additive = false) {
+      if (!state.marqueeRect || !tlCanvas) return;
+      const labelW = getTimelineLabelWidth(tlCanvas.width);
+      const layout = getTimelineTrackLayout(tlCanvas.height);
+      const xMin = Math.max(labelW, Math.min(state.marqueeRect.x0, state.marqueeRect.x1));
+      const xMax = Math.max(state.marqueeRect.x0, state.marqueeRect.x1);
+      const yMin = Math.min(state.marqueeRect.y0, state.marqueeRect.y1);
+      const yMax = Math.max(state.marqueeRect.y0, state.marqueeRect.y1);
+
+      if (!additive) {
+        state.selectedNotes.clear();
+        state.selectedEvents.clear();
+      }
+
+      const notesMidY = (layout.notesTop + layout.notesBottom) / 2;
+      for (const n of state.chart.notes) {
+        const nx = timeToX(n.time, labelW);
+        let ny = notesMidY;
+        if (layout.isPiano) {
+          const rIdx = Math.max(0, NOTE_TYPES.findIndex(nt => nt.id === n.type));
+          ny = layout.notesTop + (rIdx + 0.5) * layout.laneH;
+        }
+        if (nx >= xMin && nx <= xMax && ny >= yMin && ny <= yMax) {
+          state.selectedNotes.add(n);
+        }
+      }
+
+      for (const ev of state.chart.events) {
+        const isTS = ev.type === 'TEXT' || ev.type === 'NOTE_SPEED';
+        const bandTop = isTS ? layout.textSpeedTop : layout.fxTop;
+        const bandH = isTS ? (layout.textSpeedBottom - layout.textSpeedTop) : (layout.fxBottom - layout.fxTop);
+        const laneIdx = isTS ? (ev.type === 'TEXT' ? 0 : 1) : (Math.abs(hashCode(ev.type)) % 2);
+        const pillH = Math.min(20, (bandH - 8) / 2);
+        const ey = bandTop + 4 + laneIdx * (pillH + 3) + pillH / 2;
+        const ex0 = timeToX(ev.time, labelW);
+        const dur = Number(ev.duration) > 0 ? Number(ev.duration) : 0;
+        const ex1 = ex0 + Math.max(24, dur > 0 ? dur * state.zoomPxPerSec : 54);
+        if (ex1 >= xMin && ex0 <= xMax && ey >= yMin && ey <= yMax) {
+          state.selectedEvents.add(ev);
+        }
+      }
+
+      const firstN = state.selectedNotes.values().next().value;
+      const firstE = state.selectedEvents.values().next().value;
+      if (firstN) state.selectedItem = { kind: 'note', item: firstN };
+      else if (firstE) state.selectedItem = { kind: 'event', item: firstE };
+
+      state.marqueeRect = null;
+      refreshAllViews();
+      setStatus(`Выделено рамкой: ${state.selectedNotes.size} нот, ${state.selectedEvents.size} событий`);
+    }
+
     tlCanvas.addEventListener('mousedown', (e) => {
       const rect = tlCanvas.getBoundingClientRect();
       const mx = (e.clientX - rect.left) * (tlCanvas.width / rect.width);
       const my = (e.clientY - rect.top) * (tlCanvas.height / rect.height);
-      const labelW = 118;
+      const labelW = getTimelineLabelWidth(tlCanvas.width);
       const hit = hitTestTimeline(mx, my);
       if (hit && hit.kind === 'piano_label') {
         state.activeNoteType = hit.noteType;
@@ -3767,17 +4282,43 @@
         return;
       }
 
+      if (state.timelineTouchMode === 'erase') {
+        if (hit && (hit.kind === 'note' || hit.kind === 'event')) {
+          state.selectedNotes.clear();
+          state.selectedEvents.clear();
+          state.selectedItem = hit;
+          deleteSelectedItem();
+        }
+        return;
+      }
+
+      // Клик по существующей ноте или событию
       if (hit && (hit.kind === 'note' || hit.kind === 'event')) {
-        pushUndo();
-        state.selectedItem = hit;
-        state.draggingItem = hit;
+        if (e.ctrlKey || e.metaKey || (state.timelineTouchMode === 'select' && e.shiftKey)) {
+          const targetSet = hit.kind === 'note' ? state.selectedNotes : state.selectedEvents;
+          if (targetSet.has(hit.item)) targetSet.delete(hit.item);
+          else targetSet.add(hit.item);
+          state.selectedItem = hit;
+          refreshAllViews();
+          return;
+        }
+        startGroupDragForHit(hit);
         setCurrentTime(hit.item.time);
         refreshAllViews();
         return;
       }
 
+      // Режим Выделения рамкой (или Shift + перетаскивание по пустому месту)
+      if (state.timelineTouchMode === 'select' || (e.shiftKey && my >= 26)) {
+        state.marqueeRect = { x0: mx, y0: my, x1: mx, y1: my, additive: e.ctrlKey || e.metaKey || e.shiftKey };
+        renderTimelineCanvas();
+        return;
+      }
+
       // Одиночный клик в режиме Правки (draw) или двойной клик по дорожке нот — ставим ноту выбранного ряда Пиано-ролла
       if (hit && hit.kind === 'empty_note_lane' && (state.timelineTouchMode === 'draw' || e.detail >= 2)) {
+        state.selectedNotes.clear();
+        state.selectedEvents.clear();
         const clickedTime = e.shiftKey ? roundTime(xToTime(mx, labelW)) : snapTime(xToTime(mx, labelW));
         const targetType = hit.laneNoteType || state.activeNoteType;
         addOrReplaceNoteAt(clickedTime, targetType, state.timelineViewMode === 'pianoroll' || e.altKey || state.stackMode);
@@ -3798,44 +4339,42 @@
     });
 
     window.addEventListener('mousemove', (e) => {
-      if (!state.draggingItem && !state.isScrubbing) return;
+      if (!state.draggingItem && !state.isScrubbing && !state.marqueeRect) return;
       const rect = tlCanvas.getBoundingClientRect();
       const mx = (e.clientX - rect.left) * (tlCanvas.width / rect.width);
-      const labelW = 118;
+      const my = (e.clientY - rect.top) * (tlCanvas.height / rect.height);
+      const labelW = getTimelineLabelWidth(tlCanvas.width);
       const rawT = xToTime(mx, labelW);
       const newT = e.shiftKey ? roundTime(rawT) : snapTime(rawT);
 
-      if (state.draggingItem) {
-        const prevT = state.draggingItem.item.time;
-        state.draggingItem.item.time = newT;
-        if (state.draggingItem.kind === 'note' && (state.draggingItem.item.type === 'REVERSE' || state.draggingItem.item.type === 'REVERSE_BACK')) {
-          syncReverseFlowEvent(prevT, newT, state.draggingItem.item.type, false);
-        }
-        sortChart();
-        renderPreviewCanvas();
+      if (state.marqueeRect) {
+        state.marqueeRect.x1 = mx;
+        state.marqueeRect.y1 = my;
         renderTimelineCanvas();
-        renderInspector();
-        renderEventsList();
+      } else if (state.draggingItem) {
+        applyGroupDragAtTime(newT);
       } else if (state.isScrubbing) {
         setCurrentTime(newT);
       }
     });
 
     window.addEventListener('mouseup', () => {
+      if (state.marqueeRect) {
+        finalizeMarqueeSelection(!!state.marqueeRect.additive);
+      }
       state.draggingItem = null;
+      state.dragGroupInitial = null;
       state.isScrubbing = false;
     });
 
     tlCanvas.addEventListener('wheel', (e) => {
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
-        // Зум таймлайна
         const factor = e.deltaY < 0 ? 1.15 : 0.87;
         state.zoomPxPerSec = Math.min(600, Math.max(40, Math.round(state.zoomPxPerSec * factor)));
         const zr = document.getElementById('zoom-range');
         if (zr) zr.value = String(state.zoomPxPerSec);
       } else {
-        // Горизонтальный скролл
         state.timelineScrollX = Math.max(0, state.timelineScrollX + (e.deltaX || e.deltaY));
       }
       renderTimelineCanvas();
@@ -3857,6 +4396,28 @@
         redo();
         return;
       }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        state.selectedNotes = new Set(state.chart.notes);
+        state.selectedEvents = new Set(state.chart.events);
+        refreshAllViews();
+        setStatus(`Выделены все элементы: ${state.selectedNotes.size} нот, ${state.selectedEvents.size} событий`);
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        duplicateSelectedItems();
+        return;
+      }
+      if (e.code === 'Escape') {
+        state.selectedNotes.clear();
+        state.selectedEvents.clear();
+        state.selectedItem = null;
+        state.marqueeRect = null;
+        refreshAllViews();
+        setStatus('Выделение снято');
+        return;
+      }
 
       if (e.code === 'Space') {
         e.preventDefault();
@@ -3865,7 +4426,7 @@
       }
 
       if (e.code === 'Delete' || e.code === 'Backspace') {
-        if (state.selectedItem) {
+        if (state.selectedItem || state.selectedNotes.size > 0 || state.selectedEvents.size > 0) {
           e.preventDefault();
           deleteSelectedItem();
         }
@@ -3883,7 +4444,6 @@
         return;
       }
 
-      // Быстрая расстановка нот с клавиатуры (WASD / стрелки / QEZC)
       const keyMap = {
         KeyW: 'UP', ArrowUp: 'UP',
         KeyS: 'DOWN', ArrowDown: 'DOWN',
@@ -3973,22 +4533,45 @@
     document.querySelectorAll('[data-nudge-ms]').forEach(btn => {
       btn.addEventListener('click', () => {
         const deltaSec = (Number(btn.getAttribute('data-nudge-ms')) || 0) / 1000;
-        if (state.selectedItem && state.selectedItem.item) {
-          pushUndo();
-          const it = state.selectedItem.item;
-          const prevT = it.time;
-          it.time = roundTime(Math.max(0, it.time + deltaSec));
-          if (state.selectedItem.kind === 'note' && (it.type === 'REVERSE' || it.type === 'REVERSE_BACK')) {
-            syncReverseFlowEvent(prevT, it.time, it.type, false);
-          }
-          sortChart();
-          refreshAllViews();
-          setStatus(`Сдвиг на ${deltaSec > 0 ? '+' : ''}${(deltaSec * 1000).toFixed(0)} мс -> ${it.time.toFixed(3)} сек`);
-        } else {
-          setCurrentTime(roundTime(Math.max(0, state.currentTime + deltaSec)));
-        }
+        nudgeSelectedItems(deltaSec);
       });
     });
+
+    // Кнопки панели группового выделения (#multi-select-bar)
+    document.querySelectorAll('[data-msel-nudge]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const deltaSec = (Number(btn.getAttribute('data-msel-nudge')) || 0) / 1000;
+        nudgeSelectedItems(deltaSec);
+      });
+    });
+    const btnMselDup = document.getElementById('btn-msel-dup');
+    if (btnMselDup) btnMselDup.addEventListener('click', duplicateSelectedItems);
+    const btnMselMirH = document.getElementById('btn-msel-mirror-h');
+    if (btnMselMirH) btnMselMirH.addEventListener('click', () => mirrorAllNotes('H', true));
+    const btnMselMirV = document.getElementById('btn-msel-mirror-v');
+    if (btnMselMirV) btnMselMirV.addEventListener('click', () => mirrorAllNotes('V', true));
+    const btnMselAll = document.getElementById('btn-msel-all');
+    if (btnMselAll) {
+      btnMselAll.addEventListener('click', () => {
+        state.selectedNotes = new Set(state.chart.notes);
+        state.selectedEvents = new Set(state.chart.events);
+        refreshAllViews();
+        setStatus(`Выделены все элементы: ${state.selectedNotes.size} нот, ${state.selectedEvents.size} событий`);
+      });
+    }
+    const btnMselDel = document.getElementById('btn-msel-del');
+    if (btnMselDel) btnMselDel.addEventListener('click', deleteSelectedItem);
+    const btnMselClear = document.getElementById('btn-msel-clear');
+    if (btnMselClear) {
+      btnMselClear.addEventListener('click', () => {
+        state.selectedNotes.clear();
+        state.selectedEvents.clear();
+        state.selectedItem = null;
+        state.marqueeRect = null;
+        refreshAllViews();
+        setStatus('Выделение снято');
+      });
+    }
 
     const btnMobDel = document.getElementById('btn-mob-del-selected');
     if (btnMobDel) {
@@ -4041,6 +4624,8 @@
       state.duration = maxT + 5;
 
       state.selectedItem = null;
+      state.selectedNotes.clear();
+      state.selectedEvents.clear();
       state.timelineScrollX = 0;
       updateMapOriginBadge({
         isSwipEdit: true,
@@ -4051,7 +4636,6 @@
       syncMetaAndChartInputs();
       setCurrentTime(0);
 
-      // Подгружаем встроенную обложку и фон из PLAYLISTS_BUNDLE.sharedImages
       const sharedImgs = (PLAYLISTS_BUNDLE && PLAYLISTS_BUNDLE.sharedImages) || {};
       if (song.coverRef && sharedImgs[song.coverRef]) {
         try {
@@ -4066,7 +4650,6 @@
         } catch (_) {}
       }
 
-      // Пробуем подгрузить аудиофайл песни из папки ./charts/<Плейлист>/<Папка>/<audioFile>
       let audioLoaded = false;
       if (song.audioPath && window.location && window.location.protocol !== 'file:') {
         try {
@@ -4098,6 +4681,7 @@
       const rate = Math.min(4.0, Math.max(0.1, Number(val) || 1.0));
       state.playbackRate = rate;
       if (state.audioEl) state.audioEl.playbackRate = rate;
+      if (state.bgVideoEl) state.bgVideoEl.playbackRate = rate;
       if (customRateInput) customRateInput.value = String(rate);
       setStatus(`Скорость проигрывания превью: ${rate}x`);
     };
@@ -4108,6 +4692,8 @@
     }
     if (btnApplyCustomRate && customRateInput) {
       btnApplyCustomRate.addEventListener('click', () => applyCustomPlaybackRate(customRateInput.value));
+      customRateInput.addEventListener('change', () => applyCustomPlaybackRate(customRateInput.value));
+    } else if (customRateInput) {
       customRateInput.addEventListener('change', () => applyCustomPlaybackRate(customRateInput.value));
     }
 
@@ -4181,14 +4767,14 @@
       btnToggleRec.addEventListener('click', () => {
         state.recMode = !state.recMode;
         btnToggleRec.classList.toggle('rec-btn-active', state.recMode);
-        btnToggleRec.textContent = state.recMode ? '🔴 ЗАПИСЬ ВКЛ' : '🔴 Запись (REC)';
+        btnToggleRec.textContent = state.recMode ? '🔴 ЗАПИСЬ ВКЛ' : '🔴 Запись';
         setStatus(state.recMode
           ? 'Режим живой записи включён: запусти трек и нажимай кнопки направлений (или клавиши WASD/стрелки) в такт!'
           : 'Режим живой записи выключен');
       });
     }
 
-    // 11. Переключатели режима дорожки (10-рядный Пиано-ролл / Компактный 1 ряд) и Тач-инструментов (Правка / Прокрутка / Ластик)
+    // 11. Переключатели режима дорожки (10-рядный Пиано-ролл / Компактный 1 ряд) и Тач-инструментов (Правка / Выделение / Прокрутка / Ластик)
     document.querySelectorAll('[data-tl-view]').forEach((btn) => {
       btn.addEventListener('click', () => {
         state.timelineViewMode = btn.getAttribute('data-tl-view') || 'pianoroll';
@@ -4201,8 +4787,10 @@
       btn.addEventListener('click', () => {
         state.timelineTouchMode = btn.getAttribute('data-touch-mode') || 'draw';
         document.querySelectorAll('[data-touch-mode]').forEach((b) => b.classList.toggle('active', b === btn));
+        updateMultiSelectBarUI();
         const titles = {
           draw: 'Правка (тап по ряду в Пиано-ролле сразу ставит/убирает ноту или собирает стак)',
+          select: 'Выделение (проведи рамкой по нотам или тапай по ним, затем перетащи любую выделенную ноту для сдвига всей группы)',
           scroll: 'Прокрутка (1 палец — двигать дорожку, 2 пальца — зум)',
           erase: 'Ластик (тап по ноте или событию удаляет его)'
         };
@@ -4231,7 +4819,7 @@
       };
 
       tlCanvas.addEventListener('touchstart', (e) => {
-        const labelW = 118;
+        const labelW = getTimelineLabelWidth(tlCanvas.width);
         if (e.touches.length === 2) {
           e.preventDefault();
           const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -4269,21 +4857,46 @@
 
         if (state.timelineTouchMode === 'erase') {
           if (hit && (hit.kind === 'note' || hit.kind === 'event')) {
+            state.selectedNotes.clear();
+            state.selectedEvents.clear();
             state.selectedItem = hit;
             deleteSelectedItem();
           }
           return;
         }
 
+        if (state.timelineTouchMode === 'select') {
+          if (hit && (hit.kind === 'note' || hit.kind === 'event')) {
+            const targetSet = hit.kind === 'note' ? state.selectedNotes : state.selectedEvents;
+            if (targetSet.has(hit.item)) {
+              startGroupDragForHit(hit);
+              tGesture.mode = 'drag_item';
+              tGesture.wasAlreadySelected = true;
+            } else {
+              targetSet.add(hit.item);
+              state.selectedItem = hit;
+              startGroupDragForHit(hit);
+              tGesture.mode = 'drag_item';
+              tGesture.wasAlreadySelected = false;
+            }
+            refreshAllViews();
+          } else {
+            state.marqueeRect = { x0: mx, y0: my, x1: mx, y1: my, additive: false };
+            tGesture.mode = 'marquee';
+            renderTimelineCanvas();
+          }
+          return;
+        }
+
         if (state.timelineTouchMode === 'draw') {
           if (hit && (hit.kind === 'note' || hit.kind === 'event')) {
-            pushUndo();
-            state.selectedItem = hit;
-            state.draggingItem = hit;
+            startGroupDragForHit(hit);
             setCurrentTime(hit.item.time);
             refreshAllViews();
             tGesture.mode = 'drag_item';
           } else if (hit && hit.kind === 'empty_note_lane') {
+            state.selectedNotes.clear();
+            state.selectedEvents.clear();
             const targetType = hit.laneNoteType || state.activeNoteType;
             addOrReplaceNoteAt(tappedTime, targetType, state.timelineViewMode === 'pianoroll' || state.stackMode);
             setCurrentTime(tappedTime);
@@ -4310,7 +4923,7 @@
       }, { passive: false });
 
       tlCanvas.addEventListener('touchmove', (e) => {
-        const labelW = 118;
+        const labelW = getTimelineLabelWidth(tlCanvas.width);
         if (tGesture.mode === 'pinch' && e.touches.length === 2) {
           e.preventDefault();
           const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -4329,22 +4942,18 @@
         }
         if (e.touches.length !== 1) return;
         e.preventDefault();
-        const { mx } = touchCanvasCoords(e.touches[0]);
+        const { mx, my } = touchCanvasCoords(e.touches[0]);
         const deltaX = mx - tGesture.startX;
-        if (Math.abs(deltaX) > 6) tGesture.moved = true;
+        const deltaY = my - tGesture.startY;
+        if (Math.hypot(deltaX, deltaY) > 6) tGesture.moved = true;
 
-        if (tGesture.mode === 'drag_item' && state.draggingItem) {
-          const prevT = state.draggingItem.item.time;
-          const newT = snapTime(xToTime(mx, labelW));
-          state.draggingItem.item.time = newT;
-          if (state.draggingItem.kind === 'note' && (state.draggingItem.item.type === 'REVERSE' || state.draggingItem.item.type === 'REVERSE_BACK')) {
-            syncReverseFlowEvent(prevT, newT, state.draggingItem.item.type, false);
-          }
-          sortChart();
-          renderPreviewCanvas();
+        if (tGesture.mode === 'marquee' && state.marqueeRect) {
+          state.marqueeRect.x1 = mx;
+          state.marqueeRect.y1 = my;
           renderTimelineCanvas();
-          renderInspector();
-          renderEventsList();
+        } else if (tGesture.mode === 'drag_item' && state.draggingItem) {
+          const newT = snapTime(xToTime(mx, labelW));
+          applyGroupDragAtTime(newT);
         } else if (tGesture.mode === 'scrub') {
           setCurrentTime(snapTime(xToTime(mx, labelW)));
         } else if (tGesture.mode === 'pan') {
@@ -4354,12 +4963,20 @@
       }, { passive: false });
 
       tlCanvas.addEventListener('touchend', () => {
-        if (tGesture.mode === 'pan' && !tGesture.moved && state.timelineTouchMode === 'scroll') {
-          const t = snapTime(xToTime(tGesture.startX, 118));
+        const labelW = getTimelineLabelWidth(tlCanvas.width);
+        if (tGesture.mode === 'marquee' && state.marqueeRect) {
+          finalizeMarqueeSelection(false);
+        } else if (tGesture.mode === 'drag_item' && !tGesture.moved && state.timelineTouchMode === 'select' && tGesture.wasAlreadySelected && state.draggingItem) {
+          const targetSet = state.draggingItem.kind === 'note' ? state.selectedNotes : state.selectedEvents;
+          targetSet.delete(state.draggingItem.item);
+          refreshAllViews();
+        } else if (tGesture.mode === 'pan' && !tGesture.moved && state.timelineTouchMode === 'scroll') {
+          const t = snapTime(xToTime(tGesture.startX, labelW));
           setCurrentTime(t);
         }
         tGesture.mode = null;
         state.draggingItem = null;
+        state.dragGroupInitial = null;
       });
     }
 
@@ -4488,7 +5105,73 @@
       });
     }
 
-    // 15. Чекбокс обучающих пауз туториала
+    // 15. Чекбокс обучающих пауз туториала, тоггл Видео-фона в превью и настройки тактового размера метронома
+    const vidPreviewChk = document.getElementById('check-video-bg-preview');
+    if (vidPreviewChk) {
+      vidPreviewChk.addEventListener('change', () => {
+        state.videoBgPreviewEnabled = !!vidPreviewChk.checked;
+        if (!state.videoBgPreviewEnabled && state.bgVideoEl && !state.bgVideoEl.paused) {
+          try { state.bgVideoEl.pause(); } catch (_) {}
+        } else if (state.videoBgPreviewEnabled && state.isPlaying && state.bgVideoEl && state.bgVideoReady) {
+          try { state.bgVideoEl.play().catch(() => {}); } catch (_) {}
+        }
+        renderPreviewCanvas();
+        setStatus(
+          state.videoBgPreviewEnabled
+            ? 'Отрисовка видео-фона (.ogv) в превью включена'
+            : 'Видео-фон скрыт в превью (для экономии ресурсов смартфона; в архиве .swmap он сохранится)'
+        );
+      });
+    }
+
+    const tsPreset = document.getElementById('metro-timesig-preset');
+    const tsNumInput = document.getElementById('metro-ts-num');
+    const tsDenSelect = document.getElementById('metro-ts-den');
+
+    const applyTimeSignature = (numVal, denVal, updatePreset = true) => {
+      const n = Math.min(32, Math.max(1, Math.round(Number(numVal) || 4)));
+      const dRaw = Math.round(Number(denVal) || 4);
+      const d = [2, 4, 8, 16].includes(dRaw) ? dRaw : 4;
+      state.timeSigNum = n;
+      state.timeSigDen = d;
+      if (tsNumInput) tsNumInput.value = String(n);
+      if (tsDenSelect) tsDenSelect.value = String(d);
+      if (updatePreset && tsPreset) {
+        const key = `${n}/${d}`;
+        const hasOpt = Array.from(tsPreset.options).some(o => o.value === key);
+        tsPreset.value = hasOpt ? key : 'custom';
+      }
+      try {
+        localStorage.setItem('swipedit_ts_num', String(n));
+        localStorage.setItem('swipedit_ts_den', String(d));
+      } catch (_) {}
+      renderTimelineCanvas();
+      updateTimeReadout();
+      setStatus(`Тактовый размер метронома и сетки: ${n}/${d}`);
+    };
+
+    try {
+      const savedTsN = localStorage.getItem('swipedit_ts_num');
+      const savedTsD = localStorage.getItem('swipedit_ts_den');
+      if (savedTsN && savedTsD) {
+        applyTimeSignature(savedTsN, savedTsD, true);
+      }
+    } catch (_) {}
+
+    if (tsPreset) {
+      tsPreset.addEventListener('change', () => {
+        if (tsPreset.value === 'custom') return;
+        const [nStr, dStr] = tsPreset.value.split('/');
+        applyTimeSignature(nStr, dStr, false);
+      });
+    }
+    if (tsNumInput) {
+      tsNumInput.addEventListener('change', () => applyTimeSignature(tsNumInput.value, tsDenSelect ? tsDenSelect.value : state.timeSigDen, true));
+    }
+    if (tsDenSelect) {
+      tsDenSelect.addEventListener('change', () => applyTimeSignature(tsNumInput ? tsNumInput.value : state.timeSigNum, tsDenSelect.value, true));
+    }
+
     const tutModeChk = document.getElementById('chart-tutorial-mode');
     if (tutModeChk) {
       tutModeChk.addEventListener('change', () => {
@@ -4567,5 +5250,173 @@
     requestAnimationFrame(animationLoop);
   }
 
-  window.addEventListener('DOMContentLoaded', initUI);
+  
+  // Универсальный алиас drawArrowShape для обратной совместимости (поддерживает оба порядка аргументов)
+  function drawArrowShape(ctx, a, b, c, d, e) {
+    if (typeof a === 'number' && typeof b === 'number' && typeof c === 'number' && typeof d === 'string') {
+      return drawSwipeNote(ctx, a, b, c, d, 1, Boolean(e));
+    }
+    const typeId = typeof a === 'string' ? a : 'RIGHT';
+    const hasXY = typeof c === 'number';
+    const x = hasXY ? b : 0;
+    const y = hasXY ? c : 0;
+    const r = hasXY ? d : (typeof b === 'number' ? b : 18);
+    return drawSwipeNote(ctx, x, y, r, typeId, 1, false);
+  }
+  window.drawArrowShape = drawArrowShape;
+
+  // --- Модуль локализации интерфейса (RU / EN), комментарии в коде и пасхалка Робтопа остаются нетронутыми ---
+  const I18N_DICT_EN = {"(6) и": "(6) and", "(7) с чартами, обложками и автоподгрузкой песен:": "(7) with charts, covers and automatic song loading:", "(meta.json + chart.json + ассеты)": "(meta.json + chart.json + assets)", "(которое в игре ограничено": "(which is limited in the game to", "(перетащи любую выделенную ноту, чтобы сдвинуть всю группу)": "(drag any selected note to move the whole group)", "(с защитой 1-й секунды)": "(with 1st-second protection)", ") получают прогрессивный бонус выносливости.": ") earn a progressive endurance bonus.", "), все 24 карты и треки из 3 официальных плейлистов (": "), all 24 maps and tracks from the 3 official playlists (", "): тап по строке нужного направления ставит ноту, а тап по другой строке в том же столбце собирает": "): tap a lane to place a note, and tap another lane in the same column to build", "+ Точка на курсоре": "+ Point at cursor", "+10мс": "+10ms", "+10мс ⏩": "+10ms ⏩", "+1мс": "+1ms", "+1мс ▶": "+1ms ▶", ", а длинные выматывающие треки (>95 с и >240 нот, как": ", while long grueling tracks (>95 s and >240 notes, as", "-10мс": "-10ms", "-1мс": "-1ms", "00:00.000 (0.000s) | Такт 1.1": "00:00.000 (0.000s) | Bar 1.1", "1 доля (в бит)": "1 beat (on the beat)", "1 столбик = 1 секунда": "1 bar = 1 second", "1 такт (4 доли)": "1 bar (4 beats)", "Параметры карты и ресурсы": "Map Parameters & Assets", "1. Плотность и активный отрезок (Active Span):": "1. Density and active span (Active Span):", "1.0x (Сброс)": "1.0x (Reset)", "1/1 доли": "1/1 beats", "1/16 доли": "1/16 beat", "1/2 доли": "1/2 beats", "1/2 доли (быстро)": "1/2 beats (fast)", "1/4 доли": "1/4 beats", "1/8 доли": "1/8 beats", "10-рядном Пиано-ролле": "10-lane Piano Roll", "1000 мс": "1000 ms", "2 доли": "2 beats", "2. Вес каждого таймкода (w_i) — стаки, диагонали, углы и реверсы:": "2. Weight of each timecode (w_i) — stacks, diagonals, angles and reverses:", "3. Ноты, скорость, эффекты и надписи": "3. Notes, Speed, Effects & Texts", "3. Скорость чтения (M_speed) и мгновенный стрейн (strain_i):": "3. Reading speed (M_speed) and instant strain (strain_i):", "4. Множитель длины и выносливости марафона (L_mod и E_pts):": "4. Length and marathon endurance multiplier (L_mod and E_pts):", "Плотность чарта (NPS) и объективная сложность в баллах (без лимита)": "Chart Density (NPS) & Objective Difficulty Points (Uncapped)", "5. Итоговый балл SDP и перевод в честные звёзды (Auto ★):": "5. Final SDP score and conversion to true difficulty (Auto ★):", "8 направлений нот ·": "8 note directions ·", "95-й перцентиль: 0.0 н/с": "95th percentile: 0.0 n/s", "Auto ★ = round_0.5(SDP / 65)   (1★ ≈ 65 SDP; 1–5★ белые, 5.5–10★ красные поверх, >10★ невозможная карта)": "Auto ★ = round_0.5(SDP / 65)   (1★ ≈ 65 SDP; 1–5★ white, 5.5–10★ red, >10★ Impossible)", "BPM: 120 ·Множитель чтения: 1.00x": "BPM: 120 · Reading multiplier: 1.00x", "HTML5 Canvas 2D, Web Audio API, встроенный упаковщик ZIP/Deflate (": "HTML5 Canvas 2D, Web Audio API, built-in ZIP/Deflate packer (", "SwipEdit— Редактор карт (.swmap)": "SwipEdit — Map Editor (.swmap)", "WASD / Стрелки / Q E Z C": "WASD / Arrows / Q E Z C", "sdp это что? (what?)": "what is sdp? (what?)", "Δt_i < 0.35 с": "Δt_i < 0.35 s", "Авто-выключение через (с):": "Auto-off after (s):", "Авто-генерация 1280×720": "Auto-generate 1280×720", "Авто-генерация 512×512": "Auto-generate 512×512", "Авто-синхронизация": "Auto-sync", "Автоматически прятать комбо (": "Automatically hide combo (", "Автономный веб-редактор карт": "Standalone web map editor", "Артист (artist)": "Artist (artist)", "Ассеты архива .swmap": ".swmap archive assets", "Аудио:": "Audio:", "Базовая скорость скролла и BPM (chart.json)": "Base scroll speed and BPM (chart.json)", "Базовый BPM": "Base BPM", "Баллы сложности (SDP)": "Difficulty points (SDP)", "Без верхнего лимита": "No upper limit", "Быстрые кнопки шейдеров FX_*": "Quick shader buttons FX_*", "Быстрый штамп эффекта на курсор:": "Quick effect stamp at cursor:", "В meta.json: 0.5 ★": "In meta.json: 0.5 ★", "В отличие от ручного поля": "Unlike the manual field", "ВКЛАДКА НОТ И ИНСПЕКТОРА (ДЛЯ ТАБОВОГО РЕЖИМА И МОБИЛОК)": "NOTES & INSPECTOR TAB (FOR TAB MODE AND MOBILE)", "Время": "Time", "Время (с)": "Time (s)", "Все 3 плейлиста из игры:": "All 3 playlists from the game:", "Все события": "All events", "Встроенная библиотека всех 3 официальных плейлистов (24 карты с обложками и песнями)": "Built-in library of all 3 official playlists (24 maps with covers and songs)", "Выделено: 0": "Selected: 0", "Генератор надписей по долям": "Text generator by beats", "Горячие клавиши:": "Hotkeys:", "Готов к работе.": "Ready.", "Двойной клик по дорожке — поставить ноту/эффект · Перетаскивание мышью — сдвиг времени · ПКМ / Delete — удалить · Колесо — прокрутка (Ctrl+колесо — зум)": "Double-click a lane — place note/effect · Drag — shift time · RMB / Delete — remove · Wheel — scroll (Ctrl+wheel — zoom)", "Диагонали: 0% · Смены ≥90°: 0": "Diagonals: 0% · Turns ≥90°: 0", "Динамическая скорость скролла (NOTE_SPEED)": "Dynamic scroll speed (NOTE_SPEED)", "Длительность (с)": "Duration (s)", "Добавить событие / шейдер / надпись": "Add event / shader / text", "Дорожка и камера": "Lane & camera", "Загрузка расчёта текущей карты...": "Calculating current map...", "Идея, сборка и адаптация:": "Idea, build and adaptation:", "Инспектор выбранного элемента": "Selected Item Inspector", "Инспектор выбранной ноты или ивента": "Selected note or event inspector", "Исходный код": "Source code", "Карточка трека (meta.json)": "Track card (meta.json)", "Кликни по ноте или событию на таймлайне для тонкой правки (ПКМ или Delete — удалить).": "Click a note or event on the timeline for fine editing (RMB or Delete — remove).", "Короткие спам-карты (<30 с) штрафуются множителем": "Short spam maps (<30 s) are penalized by a multiplier", "Кто делал": "Who made it", "Масштаб:": "Zoom:", "Микро-сдвиг ноты:": "Micro-shift note:", "Микшер громкости: BGM, Хитсаунды, Метроном": "Volume mixer: BGM, Hitsounds, Metronome", "Микшер звука ниже ↓": "Audio mixer below ↓", "Множитель speed": "Speed multiplier", "НИЖНИЙ ДОК ТАЙМЛАЙНА": "TIMELINE BOTTOM DOCK", "На телефоне удобнее всего ставить ноты прямо на": "On a phone it's easiest to place notes directly on", "Название (title)": "Title (title)", "Не загружено (синтезатор)": "Not loaded (synth)", "Нот:": "Notes:", "Ноты, скорость, эффекты и надписи": "Notes, speed, effects and text", "Обложка:": "Cover:", "Оригинальная игра": "Original game", "Отмена": "Cancel", "Очистить ноты": "Clear notes", "ПАНЕЛЬ АНАЛИТИКИ ПЛОТНОСТИ ЧАРТА (NPS) И БЕЗЛИМИТНОЙ СЛОЖНОСТИ В БАЛЛАХ": "CHART DENSITY (NPS) AND NO-LIMIT DIFFICULTY ANALYTICS PANEL", "ПРАВАЯ КОЛОНКА: НОТЫ, ЭФФЕКТЫ, СКОРОСТЬ СКРОЛЛА И НАДПИСИ ВМЕСТО КОМБО": "RIGHT COLUMN: NOTES, EFFECTS, SCROLL SPEED AND TEXT INSTEAD OF COMBO", "Палитра нот (8 свайпов + реверс)": "Note palette (8 swipes + reverse)", "Панель вкладок (основная навигация на телефонах + переключатель Вкладки / Плитки для ПК)": "Tab bar (main navigation on phones + Tabs / Tiles switch for PC)", "Параметры": "Settings", "Параметры карты и ресурсы": "Map parameters and assets", "Пик 1с:": "Peak 1s:", "Пиковый NPS (Макс 1с / 3с)": "Peak NPS (Max 1s / 3s)", "Плейлист": "Playlist", "Плотность чарта (NPS) и объективная сложность в баллах (SDP)": "Chart density (NPS) and objective difficulty in points (SDP)", "По всему треку: 0.00 н/с": "Whole track: 0.00 n/s", "Подлёт ноты (мс)": "Note approach (ms)", "Попап с объяснением формулы SDP для демон-листа / невозможных уровней": "Popup explaining the SDP formula for the demon list / impossible levels", "Поставить на курсор": "Place at cursor", "Превью карты": "Map preview", "Привязка:": "Snap:", "Пуск/Пауза ·": "Play/Pause ·", "Разбивает строку по словам или через": "Splits the line by words or using", "Размер:": "Time Sig:", "Распространяется под лицензией": "Distributed under license", "Реверс-ноты ·": "Reverse notes ·", "Свободно": "Free", "Свой множитель NOTE_SPEED:": "Custom NOTE_SPEED multiplier:", "Свой…": "Custom…", "Своя…": "Custom…", "Сдвиг сетки (gridOffset, с)": "Grid offset (gridOffset, s)", "Скорость:": "Speed:", "Скролл и Темп": "Scroll & Tempo", "Сложность (0.5–10 ★)": "Difficulty (0.5–10 ★)", "Сложность:": "Difficulty:", "Событий:": "Events:", "Список событий на карте": "Map event list", "Ср. NPS:": "Avg NPS:", "Средний NPS (активный)": "Average NPS (active)", "Ставить кликом": "Place on click", "Стаки и Реверсы": "Stacks & Reverses", "Тайминг и базовая скорость скролла": "Timing and base scroll speed", "Таймлайн": "Timeline", "Текст надписи": "Text content", "Тип": "Type", "Тип ивента": "Event type", "Только NOTE_SPEED": "NOTE_SPEED only", "Только TEXT": "TEXT only", "Только шейдеры FX_*": "FX_* shaders only", "Точки смены BPM (timing[])": "BPM change points (timing[])", "Точки темпа (timing[])": "Tempo points (timing[])", "Транспорт-панель": "Transport panel", "Трек / Карта": "Track / Map", "Файлы внутри .swmap": "Files inside .swmap", "Фон (картинка /": "Background (image /", "Цвет меню (hex)": "Menu color (hex)", "Цвет надписи": "Text color", "Честные звёзды (Auto ★)": "True difficulty (Auto ★)", "Что было использовано": "What was used", "Шаг между словами": "Gap between words", "Шаг по сетке ·": "Grid step ·", "в": "in", "вертикальный стак": "vertical stack", "видео):": "video):", "вместо комбо-счётчика строго в бит начиная с курсора:": "instead of the combo counter, strictly on the beat starting at the cursor:", "внизу (режим": "at the bottom (mode", "вычисляется напрямую из геометрии и таймингов чарта и": "is calculated directly from the chart's geometry and timings and", "генератор надписей": "text generator", "задаёт базовую скорость подлёта (1000 мс по умолчанию), а динамические ускорения/замедления внутри трека ставятся событием": "sets the base approach speed (1000 ms by default), while dynamic speed-ups/slow-downs within the track are set by the event", "значок лицензии": "license badge", "и": "and", "и выставляется автором вручную), оценка": "and set manually by the author), rating", "и выставляется автором вручную), рейтинг": "and set manually by the author), rating", "и расставляет серию ивентов": "and places a series of events", "кредиты кредитная карта": "credits, credit card", "левая колонка": "left column", "не имеет верхнего потолка": "has no upper cap", "палитра нот": "note palette", "панель с аналитикой": "analytics panel", "перед фразой и": "before the phrase and", "после, как в Hi-Tech)": "after, as in Hi-Tech)", "рабочая область": "workspace", "редактор событий": "event editor", "смена скорости прокрутки (с кастомным значением)": "scroll speed change (with custom value)", "смещение": "offset", "события на карте": "events on the map", "центр": "center", "шапка": "header", "— наличие диагонального свайпа (": "— presence of a diagonal swipe (", "— нота": "— note", "— резкий разворот направления между соседними нотами при интервале": "— sharp direction reversal between adjacent notes at an interval of", "— специально для ранжирования челленджей и листа невозможных уровней.": "— specifically for ranking challenges and the impossible levels list.", "— число нот в вертикальном стаке на одном таймкоде (": "— number of notes in a vertical stack on one timecode (", "— это позволяет объективнее оценивать сложность у множества карт.": "— this allows a more objective difficulty rating for many maps.", "↶ Отмена": "↶ Undo", "↷ Повтор": "↷ Redo", "⇄ Зеркало Г": "⇄ Mirror H", "⇅ Зеркало В": "⇅ Mirror V", "≤ 5 мс": "≤ 5 ms", "⏪ -10мс": "⏪ -10ms", "⏱ Метроном:": "⏱ Metronome:", "⏹ Стоп": "⏹ Stop", "▶ Пуск": "▶ Play", "◀ -1мс": "◀ -1ms", "★ Записать расчётные звёзды в meta.json": "★ Write calculated stars to meta.json", "☑ Все": "☑ All", "⚡ Авто BPM": "⚡ Auto BPM", "⚡ Пик волны (Onset)": "⚡ Waveform peak (Onset)", "⚡ Поставить событие на курсор": "⚡ Place event at cursor", "✎ Правка": "✎ Edit", "✕ Сброс": "✕ Clear", "✨ Демо": "✨ Demo", "✨ События и FX (36)": "✨ Events & FX (36)", "❓ Как считается SDP (Формула)": "❓ How SDP is calculated (Formula)", "⧉ Дублировать": "⧉ Duplicate", "⬚ Выделение (Рамка/Группа)": "⬚ Select (Box/Group)", "🌌 Фон / .ogv": "🌌 BG / .ogv", "🎓 Обучающие паузы из туториала (": "🎓 Tutorial training pauses (", "🎬 Видео-фон в превью": "🎬 Video BG in Preview", "🎬 Превью": "🎬 Preview", "🎵 Загрузить": "🎵 Load", "🎵 Информация": "🎵 Info", "🎵 Музыка:": "🎵 Music:", "🎵 Официальный саундтрек (24 карты)": "🎵 Official soundtrack (24 maps)", "🎹 Набивка нот, стаки и микро-тайминг": "🎹 Note filling, stacks & micro-timing", "🎹 Пиано-ролл (10 рядов)": "🎹 Piano Roll (10 lanes)", "🎹 Смещение": "🎹 Offset", "👁 Превью-видео": "👁 Preview Video", "💬 Разложить фразу по битам": "💬 Split phrase by beats", "💾 Скачать .swmap": "💾 Download .swmap", "📂 Открыть .swmap": "📂 Open .swmap", "📂 Открыть в редакторе": "📂 Open in editor", "📈 График плотности нот по секундам (клик по пику — переход к дропу)": "📈 Note density chart per second (click a peak — jump to the drop)", "📊 Статистика": "📊 Stats", "📏 Компактно (1 ряд)": "📏 Compact (1 lane)", "📐 Формула объективной сложности SDP (SwipEdit Difficulty Points)": "📐 Objective difficulty formula SDP (SwipEdit Difficulty Points)", "📐 Формула объективной сложности SDP (SwipEdit's Difficulty Points)": "📐 Objective difficulty formula SDP (SwipEdit's Difficulty Points)", "📚 Режим стака": "📚 Stack mode", "📥 Скачать .swmap": "📥 Download .swmap", "🔍 Проверить карту": "🔍 Check map", "🔴 Запись": "🔴 Record", "🖐 Прокрутка / Зум": "🖐 Scroll / Zoom", "🖥 Режим: Плитки / Вкладки": "🖥 Mode: Tiles / Tabs", "🖼 Обложка": "🖼 Cover", "🗑 Удалить": "🗑 Delete", "🗑 Удалить выбранное": "🗑 Delete selected", "🥁 Хитсаунд:": "🥁 Hitsound:", "🧲 Сетка + Пик": "🧲 Grid + Peak", "🧹 Ластик": "🧹 Eraser", "Автоматически определить BPM и сдвиг сетки (gridOffset) по загруженному аудио": "Automatically detect BPM and grid offset (gridOffset) from the loaded audio", "Базовое время прилёта ноты от края к центру в миллисекундах (меньше = быстрее базовый скролл)": "Base note travel time from edge to center in milliseconds (lower = faster base scroll)", "Вид дорожки нот: 10-рядный Пиано-ролл (удобно для телефонов и стаков) или Компактно (1 ряд)": "Lane view: 10-lane Piano Roll (handy for phones and stacks) or Compact (1 lane)", "Включает обучающие паузы из 1.1 (tutorial_controller.gd) на первой обычной и первой реверс-ноте карты": "Enables tutorial pauses from 1.1 (tutorial_controller.gd) on the map's first normal and first reverse note", "Включить и настроить громкость метронома по сетке BPM (до 200% усиления)": "Enable and set metronome volume on the BPM grid (up to 200% boost)", "Включить и настроить громкость хитсаундов нот (до 200% усиления)": "Enable and set note hitsound volume (up to 200% boost)", "Выделить все ноты и события карты (Ctrl+A)": "Select all notes and events on the map (Ctrl+A)", "Громкость музыки (BGM)": "Music volume (BGM)", "Дублировать выделенные ноты/ивенты вперёд на 1 долю (Ctrl+D)": "Duplicate selected notes/events forward by 1 beat (Ctrl+D)", "Загрузить демо-карту из 1.1 (Tutorial — Arvicheskyy)": "Load the demo map from 1.1 (Tutorial — Arvicheskyy)", "Загрузить фоновую картинку (.png/.jpg/.webp) или готовый видео-фон .ogv напрямую в архив .swmap без перекодирования": "Load a background image (.png/.jpg/.webp) or a ready video background .ogv directly into the .swmap archive without re-encoding", "Закрыть": "Close", "Записать расчётные звёзды сложности в поле difficulty (meta.json, макс. 10★)": "Write calculated difficulty stars to the difficulty field (meta.json, max 10★)", "Знаменатель: длительность одной доли (4 = четверть, 8 = восьмая)": "Denominator: length of one beat (4 = quarter, 8 = eighth)", "Имя аудиофайла в chart.json": "Audio file name in chart.json", "Имя файла обложки в chart.json": "Cover file name in chart.json", "Имя фонового файла в chart.json (например bg.png или bg.ogv)": "Background file name in chart.json (e.g. bg.png or bg.ogv)", "Кастомная скорость воспроизведения (0.10x – 4.00x)": "Custom playback speed (0.10x – 4.00x)", "Надпись": "Text", "Нажимай в ритм для определения BPM": "Tap in rhythm to detect BPM", "Наслаивать ноты разных направлений в один вертикальный стак на одном таймкоде": "Stack notes of different directions into one vertical stack on the same timecode", "Объективная сложность чарта в баллах (без лимита)": "Objective chart difficulty in points (no limit)", "Опционально: если мобильный браузер не декодирует Ogg Theora (.ogv) в превью, подставь любой .mp4/.webm чисто для предпросмотра (в .swmap уйдёт твой .ogv)": "Optional: if the mobile browser can't decode Ogg Theora (.ogv) in the preview, use any .mp4/.webm just for preview (your .ogv will still go into the .swmap)", "Отзеркалить все ноты по вертикали": "Mirror all notes vertically", "Отзеркалить все ноты по горизонтали": "Mirror all notes horizontally", "Отзеркалить выделенные ноты по вертикали": "Mirror selected notes vertically", "Отзеркалить выделенные ноты по горизонтали": "Mirror selected notes horizontally", "Открыть подробный разбор математической формулы SDP и расчёт по текущей карте": "Open a detailed breakdown of the SDP math formula and the calculation for the current map", "Открыть существующий .swmap или перетащить файл на страницу": "Open an existing .swmap or drag the file onto the page", "Отменить (Ctrl+Z)": "Undo (Ctrl+Z)", "Переключить раскладку: Вкладки (мобильная) / Плитки (ПК)": "Switch layout: Tabs (mobile) / Tiles (PC)", "Повторить (Ctrl+Y)": "Redo (Ctrl+Y)", "Подпись SwipEdit проверена: карта создана в SwipEdit": "SwipEdit signature verified: map was created in SwipEdit", "Показывать видео-фон (.ogv) на канвасе превью (выключи на слабом смартфоне, если тормозит декодирование видео)": "Show video background (.ogv) on the preview canvas (turn off on a weak phone if video decoding lags)", "Пресет скорости воспроизведения": "Playback speed preset", "Проверить карту на ошибки перед сохранением": "Check the map for errors before saving", "Разделы редактора": "Editor sections", "Регулировка громкости превью": "Preview volume adjustment", "Режим живой записи (свайпы и клавиши ставят ноты на лету под музыку)": "Live recording mode (swipes and keys place notes on the fly to the music)", "Режим касания пальцем / мышью по таймлайну": "Finger / mouse touch mode on the timeline", "Скачать отдельно chart.json и meta.json": "Download chart.json and meta.json separately", "Слова через пробел или |": "Words separated by space or |", "Снять выделение (Esc)": "Deselect (Esc)", "Собрать и скачать готовый архив .swmap для импорта в Swipetava": "Build and download a ready .swmap archive for import into Swipetava", "Сразу собрать и скачать выбранную официальную карту как .swmap": "Immediately build and download the selected official map as .swmap", "Сразу ставить ноту при клике по кнопке направления": "Place a note immediately when clicking a direction button", "Тактовый размер для метронома и тактовой сетки таймлайна (3/4, 4/4, 5/4, 6/8, 11/8 или любой свой N/M)": "Time signature for the metronome and timeline bar grid (3/4, 4/4, 5/4, 6/8, 11/8 or any custom N/M)", "Удалить все выделенные элементы (Delete)": "Delete all selected items (Delete)", "Цвет серии надписей": "Text series color", "Числитель: число долей в такте": "Numerator: beats per bar", "Шаг вперёд по сетке (])": "Step forward on the grid (])", "Шаг назад по сетке ([)": "Step back on the grid ([)", "${fileName} (${(bytes.byteLength / 1024 / 1024).toFixed(2)} МБ)": "${fileName} (${(bytes.byteLength / 1024 / 1024).toFixed(2)} MB)", "${formatTime(state.currentTime)} / ${formatTime(state.duration)} | Такт ${barIdx}.${beatIdx} (${tsNum}/${tsDen})": "${formatTime(state.currentTime)} / ${formatTime(state.duration)} | Bar ${barIdx}.${beatIdx} (${tsNum}/${tsDen})", "${scopeTxt} отзеркалены по вертикали (↑ ↔ ↓)": "${scopeTxt} mirrored vertically (↑ ↔ ↓)", "${scopeTxt} отзеркалены по горизонтали (← ↔ →)": "${scopeTxt} mirrored horizontally (← ↔ →)", "${st.avgNps.toFixed(2)} н/с": "${st.avgNps.toFixed(2)} n/s", "${st.minEffTravelMs} мс (${st.maxSpeed.toFixed(2)}x)": "${st.minEffTravelMs} ms (${st.maxSpeed.toFixed(2)}x)", "${st.stacksCount} (макс ×${st.maxStackSize}) / ${st.reversesCount}": "${st.stacksCount} (max ×${st.maxStackSize}) / ${st.reversesCount}", ", трек загружен!": ", track loaded!", "95-й перцентиль: ${st.p95Nps.toFixed(1)} н/с": "95th percentile: ${st.p95Nps.toFixed(1)} n/s", ": '(мгнов.)'}": ": '(instant)'}", "<button type=\"button\" class=\"pad-btn pad-center\" id=\"btn-place-active-note\" title=\"Поставить выбранную ноту на текущий таймкод\">Поставить</button>": "<button type=\"button\" class=\"pad-btn pad-center\" id=\"btn-place-active-note\" title=\"Place the selected note on the current timecode\">Place</button>", "<div class=\"muted-hint\">Кликни по любой ноте или событию на таймлайне (или в таблице справа), чтобы изменить его точное время, направление, текст, цвет или скорость. Правый клик или клавиша <code>Delete</code> удаляет элемент.</div>": "<div class=\"muted-hint\">Click any note or event on the timeline (or in the table on the right) to change its exact time, direction, text, color or speed. Right-click or the <code>Delete</code> key removes the item.</div>", "<label>Длительность duration (сек)\n            <input type=\"number\" id=\"insp-ev-duration\" step=\"0.05\" min=\"0.05\" value=\"${item.duration !== undefined ? item.duration : (def.defaultDuration || 0.5)}\" />\n          </label>": "<label>Duration (sec)\n            <input type=\"number\" id=\"insp-ev-duration\" step=\"0.05\" min=\"0.05\" value=\"${item.duration !== undefined ? item.duration : (def.defaultDuration || 0.5)}\" />\n          </label>", "<label>Множитель скорости speed\n            <input type=\"number\" id=\"insp-ev-speed\" step=\"0.05\" min=\"0.1\" max=\"10\" value=\"${item.speed !== undefined ? item.speed : 1.5}\" />\n          </label>": "<label>Speed multiplier speed\n            <input type=\"number\" id=\"insp-ev-speed\" step=\"0.05\" min=\"0.1\" max=\"10\" value=\"${item.speed !== undefined ? item.speed : 1.5}\" />\n          </label>", "<label>Надпись (text)\n            <input type=\"text\" id=\"insp-ev-text\" value=\"${escapeHtml(item.text || '')}\" />\n          </label>": "<label>Text (text)\n            <input type=\"text\" id=\"insp-ev-text\" value=\"${escapeHtml(item.text || '')}\" />\n          </label>", "<label>Цвет (color)\n            <input type=\"color\" id=\"insp-ev-color\" value=\"${item.color || def.defaultColor || '#ffffff'}\" />\n          </label>": "<label>Color (color)\n            <input type=\"color\" id=\"insp-ev-color\" value=\"${item.color || def.defaultColor || '#ffffff'}\" />\n          </label>", "<option value=\"${escapeHtml(item.uid)}\" ${isHiTech ? 'selected' : ''}>[${escapeHtml(item.playlistId)}] ${escapeHtml(title)} — ${escapeHtml(artist)} (${bpm} BPM · ${nLen} нот · ${eLen} ив.)</option>": "<option value=\"${escapeHtml(item.uid)}\" ${isHiTech ? 'selected' : ''}>[${escapeHtml(item.playlistId)}] ${escapeHtml(title)} — ${escapeHtml(artist)} (${bpm} BPM · ${nLen} notes · ${eLen} ev.)</option>", "<option value=\"ALL\">Все 3 плейлиста (${allPlaylistSongs.length} карт)</option>": "<option value=\"ALL\">All 3 playlists (${allPlaylistSongs.length} maps)</option>", "BG_COLOR (Смена цвета фона)": "BG_COLOR (Background color change)", "BLACKOUT (Затемнение)": "BLACKOUT (Blackout)", "BPM ${tp.bpm} | SPEED ${st.speed}x (${effMs}мс) | ${st.flowLeft ? '← LEFT' : 'RIGHT →'}": "BPM ${tp.bpm} | SPEED ${st.speed}x (${effMs}ms) | ${st.flowLeft ? '← LEFT' : 'RIGHT →'}", "BPM: ${state.chart.bpm} · Множитель чтения: ${st.speedModAvg.toFixed(2)}x": "BPM: ${state.chart.bpm} · Reading multiplier: ${st.speedModAvg.toFixed(2)}x", "CAMERA_BOB_OFF (Качание камеры ВЫКЛ)": "CAMERA_BOB_OFF (Camera bob OFF)", "CAMERA_BOB_ON (Качание камеры ВКЛ)": "CAMERA_BOB_ON (Camera bob ON)", "DISCO (Неоновая диско-подсветка)": "DISCO (Neon disco lights)", "FLASH (Вспышка мгновенная / долгая)": "FLASH (Flash instant / long)", "FX / КАМЕРА": "FX / CAMERA", "FX_AQUA (Подводный аква-шейдер)": "FX_AQUA (Underwater aqua shader)", "FX_ASH_WIND (Пепельный ветер)": "FX_ASH_WIND (Ash wind)", "FX_BW (Чёрно-белый)": "FX_BW (Black & white)", "FX_DREAD (Тени с краёв / Dread)": "FX_DREAD (Edge shadows / Dread)", "FX_DUOTONE (Дуотон)": "FX_DUOTONE (Duotone)", "FX_ENDING (Кинематографичный финал / интро)": "FX_ENDING (Cinematic ending / intro)", "FX_GLITCH (Глитч полосами)": "FX_GLITCH (Striped glitch)", "FX_HALFTONE (Полутоновый растр)": "FX_HALFTONE (Halftone screen)", "FX_INVERT (Инверсия цветов)": "FX_INVERT (Color invert)", "FX_OLD_TV (Старый ТВ / CRT)": "FX_OLD_TV (Old TV / CRT)", "FX_PIXELATE (Пикселизация)": "FX_PIXELATE (Pixelate)", "FX_POSTERIZE (Постеризация)": "FX_POSTERIZE (Posterize)", "FX_RGB_SPLIT (Хроматический RGB-раскол)": "FX_RGB_SPLIT (Chromatic RGB split)", "FX_WAVE (Волновое искажение)": "FX_WAVE (Wave distortion)", "FX_ZOOM_BLUR (Зум-блюр)": "FX_ZOOM_BLUR (Zoom blur)", "HUD_HIDE (Скрыть комбо / HUD)": "HUD_HIDE (Hide combo / HUD)", "HUD_SHOW (Показать комбо / HUD)": "HUD_SHOW (Show combo / HUD)", "NOTES_BOUNCE_OFF (Прыжки нот ВЫКЛ)": "NOTES_BOUNCE_OFF (Note bounce OFF)", "NOTES_BOUNCE_ON (Прыжки нот ВКЛ)": "NOTES_BOUNCE_ON (Note bounce ON)", "NOTES_FLOW_LEFT (Поток влево ←)": "NOTES_FLOW_LEFT (Flow left ←)", "NOTES_FLOW_RIGHT (Поток вправо →)": "NOTES_FLOW_RIGHT (Flow right →)", "NOTES_SPIN_OFF (Вращение нот ВЫКЛ)": "NOTES_SPIN_OFF (Note spin OFF)", "NOTES_SPIN_ON (Вращение нот ВКЛ)": "NOTES_SPIN_ON (Note spin ON)", "NOTES_WAVE_OFF (Волна нот ВЫКЛ)": "NOTES_WAVE_OFF (Note wave OFF)", "NOTES_WAVE_ON (Волна нот ВКЛ)": "NOTES_WAVE_ON (Note wave ON)", "NOTE_PUSH_OFF (Толчок нот ВЫКЛ)": "NOTE_PUSH_OFF (Note push OFF)", "NOTE_PUSH_ON (Толчок нот ВКЛ)": "NOTE_PUSH_ON (Note push ON)", "NOTE_SPEED (Скорость скролла)": "NOTE_SPEED (Scroll speed)", "SHAKE (Тряска экрана)": "SHAKE (Screen shake)", "TEXT (Надпись вместо комбо)": "TEXT (Text instead of combo)", "Tap Tempo: ${bpm} BPM (${tapTimes.length} нажатий)": "Tap Tempo: ${bpm} BPM (${tapTimes.length} taps)", "Tap Tempo: продолжай нажимать в такт...": "Tap Tempo: keep tapping in time...", "АУДИО ВОЛНА": "AUDIO WAVE", "Авто-BPM: определён темп ${bestBpm} BPM, сдвиг сетки ${offsetSec.toFixed(3)} сек": "Auto-BPM: tempo detected ${bestBpm} BPM, grid offset ${offsetSec.toFixed(3)} sec", "В meta.json: ${state.meta.difficulty} ★ ${renderSwipetavaStarsHtml(state.meta.difficulty)}": "In meta.json: ${state.meta.difficulty} ★ ${renderSwipetavaStarsHtml(state.meta.difficulty)}", "В архиве .swmap не найден обязательный файл chart.json": "Required file chart.json not found in the .swmap archive", "ВОЛНА": "WAVE", "Введи слова через пробел или | для раскидки по битам": "Enter words separated by space or | to spread them across beats", "Видео-фон скрыт в превью (для экономии ресурсов смартфона; в архиве .swmap он сохранится)": "Video background hidden in preview (to save phone resources; it will be kept in the .swmap archive)", "Включены обучающие паузы из туториала (\"tutorial\": \"first_swipe\" на 1-й обычной и 1-й реверс-ноте)": "Tutorial training pauses enabled (\"tutorial\": \"first_swipe\" on the 1st normal and 1st reverse note)", "Возвращает счётчик комбо и интерфейс после серии надписей TEXT (как на карте Hi-Tech)": "Brings back the combo counter and UI after a TEXT series (as on the Hi-Tech map)", "Все ноты": "All notes", "Выбрана дорожка ноты: ${hit.noteType}": "Note lane selected: ${hit.noteType}", "Выводит кастомную надпись в зоне комбо/оценки (как на карте Hi-Tech и в интро)": "Shows a custom text in the combo/rating area (as on the Hi-Tech map and in the intro)", "Выделение (проведи рамкой по нотам или тапай по ним, затем перетащи любую выделенную ноту для сдвига всей группы)": "Selection (draw a box over notes or tap them, then drag any selected note to shift the whole group)", "Выделение снято": "Selection cleared", "Выделенные ноты (${targetNotes.length})": "Selected notes (${targetNotes.length})", "Выделено рамкой: ${state.selectedNotes.size} нот, ${state.selectedEvents.size} событий": "Box-selected: ${state.selectedNotes.size} notes, ${state.selectedEvents.size} events", "Выделено: ${nCnt} нот, ${eCnt} событий": "Selected: ${nCnt} notes, ${eCnt} events", "Выделены все элементы: ${state.selectedNotes.size} нот, ${state.selectedEvents.size} событий": "All items selected: ${state.selectedNotes.size} notes, ${state.selectedEvents.size} events", "Выключает вертикальные прыжки нот": "Turns off vertical note bounce", "Выключает волновое движение нот": "Turns off note wave motion", "Выключает вращение нот": "Turns off note spin", "Выключает импульсный толчок нот": "Turns off note push pulse", "Готово! Скачан архив ${safeName}.swmap (${(zipBytes.byteLength / 1024 / 1024).toFixed(2)} МБ)": "Done! Downloaded archive ${safeName}.swmap (${(zipBytes.byteLength / 1024 / 1024).toFixed(2)} MB)", "Движение нот, реверс дорожки и камера": "Note motion, lane reverse and camera", "Двухцветный контрастный градиент": "Two-tone high-contrast gradient", "Диагонали: ${st.diagPct}% · Смены ≥90°: ${st.sharpTurns}": "Diagonals: ${st.diagPct}% · Turns ≥90°: ${st.sharpTurns}", "Длина: ${st.activeSpan.toFixed(1)}с (множитель длины ×${st.lengthMod.toFixed(2)})": "Length: ${st.activeSpan.toFixed(1)}s (length multiplier ×${st.lengthMod.toFixed(2)})", "Для Авто-BPM сначала загрузи аудиофайл или выбери карту из плейлиста": "For Auto-BPM, first load an audio file or pick a map from a playlist", "Добавлен эффект ${fxType} на ${t.toFixed(3)} сек": "Effect ${fxType} added at ${t.toFixed(3)} sec", "Добавлена серия из ${parts.length} надписей TEXT по битам": "Added a series of ${parts.length} TEXT labels by beats", "Загружен видео-фон ${f.name} → сохранён как ${targetBgName} в .swmap без перекодирования": "Video background ${f.name} loaded → saved as ${targetBgName} in .swmap without re-encoding", "Загружен фон ${f.name}": "Background ${f.name} loaded", "Загружена демо-карта «${state.meta.title}» — ${state.meta.artist} (${state.chart.notes.length} нот, ${state.chart.events.length} событий)": "Demo map «${state.meta.title}» — ${state.meta.artist} loaded (${state.chart.notes.length} notes, ${state.chart.events.length} events)", "Загружена карта \"${state.meta.title}\" — ${state.chart.notes.length} нот, ${state.chart.events.length} событий": "Loaded map \"${state.meta.title}\" — ${state.chart.notes.length} notes, ${state.chart.events.length} events", "Загружена карта «${state.meta.title}» (${entry.playlistId}) — ${state.chart.notes.length} нот, ${state.chart.events.length} событий": "Loaded map «${state.meta.title}» (${entry.playlistId}) — ${state.chart.notes.length} notes, ${state.chart.events.length} events", "Загружена обложка ${f.name}": "Cover ${f.name} loaded", "Загружено аудио ${f.name}": "Audio ${f.name} loaded", "Загружено видео ${f.name} для превью (в самой игре Swipetava поддерживается .ogv)": "Video ${f.name} loaded for preview (the Swipetava game itself supports .ogv)", "Импульсное подёргивание дорожки нот на каждую долю": "Pulsing jerk of the note lane on every beat", "Камера ритмично покачивается и пульсирует в такт BPM": "Camera sways and pulses rhythmically in time with the BPM", "Карта подписана скрытой меткой SwipEdit (${wmTag}) внутри JSON и ZIP.": "The map is signed with a hidden SwipEdit mark (${wmTag}) inside the JSON and ZIP.", "Карта создана в SwipEdit (скрытая подпись активна)": "Map created in SwipEdit (hidden signature active)", "Комиксный точечный растр поверх сцены": "Comic dot-screen overlay on the scene", "Ластик (тап по ноте или событию удаляет его)": "Eraser (tap a note or event to delete it)", "Меняет множитель скорости полёта нот (1 = базовая, 1.25 / 1.5 / 2 = быстрее)": "Changes the note flight speed multiplier (1 = base, 1.25 / 1.5 / 2 = faster)", "Меняет цвет фона карты: при duration = 0 мгновенно, при duration > 0 плавно переливает к выбранному цвету": "Changes the map background color: instantly at duration = 0, smoothly fades to the chosen color at duration > 0", "НОТЫ": "NOTES", "НОТЫ / СТАКИ": "NOTES / STACKS", "Надписи вместо комбо и скорость скролла": "Text instead of combo and scroll speed", "Негатив экрана на время duration": "Screen negative for duration", "Нота ${noteType} поставлена на ${t.toFixed(3)} сек${stackCount > 1 ?": "Note ${noteType} placed at ${t.toFixed(3)} sec${stackCount > 1 ?", "Ноты начинают прыгать вверх-вниз по синусоиде в такт биту": "Notes start bouncing up and down in a sine wave in time with the beat", "Ноты непрерывно вращаются вокруг своей оси во время полёта (из карт SwipeTrava и Ew.mp3)": "Notes spin continuously around their axis during flight (from the SwipeTrava and Ew.mp3 maps)", "Обесцвечивание с повышенным контрастом": "Desaturation with increased contrast", "Обучающие паузы туториала выключены": "Tutorial training pauses disabled", "Останавливает покачивание камеры": "Stops camera sway", "Отменено последнее действие": "Last action undone", "Отрисовка видео-фона (.ogv) в превью включена": "Video background (.ogv) rendering in preview enabled", "Официальная демо-карта Tutorial (v1.1), подписана в SwipEdit.": "Official Tutorial demo map (v1.1), signed in SwipEdit.", "Официальная карта «${state.meta.title}» из встроенной библиотеки SwipEdit.": "Official map «${state.meta.title}» from the built-in SwipEdit library.", "Очистить все ноты на карте?": "Clear all notes on the map?", "Ошибка конвертации .ctex: ${err.message}": "Conversion error .ctex: ${err.message}", "Ошибка конвертации .oggvorbisstr: ${err.message}": "Conversion error .oggvorbisstr: ${err.message}", "Ошибка сборки .swmap: ${err.message}": "Error building .swmap: ${err.message}", "Ошибка чтения .swmap: ${err.message}": "Error reading .swmap: ${err.message}", "Ошибка чтения .swmap:\\n${err.message}": "Error reading .swmap:\\n${err.message}", "По всему треку (${st.totalLength.toFixed(0)}с): ${st.totalNps.toFixed(2)} н/с": "Whole track (${st.totalLength.toFixed(0)}s): ${st.totalNps.toFixed(2)} n/s", "Повторено отменённое действие": "Undone action redone", "Погружает экран в темноту на указанное время (duration)": "Plunges the screen into darkness for the given time (duration)", "Подводное преломление с мягкими аква-волнами и бликами (из карты swtv)": "Underwater refraction with soft aqua waves and glints (from the swtv map)", "Подключено превью-видео ${f.name} (в архиве .swmap остаётся ${state.chart.backgroundFile})": "Preview video ${f.name} connected (the .swmap archive keeps ${state.chart.backgroundFile})", "Поставлен кастомный NOTE_SPEED = ${spd}x на ${t.toFixed(3)} сек": "Custom NOTE_SPEED = ${spd}x placed at ${t.toFixed(3)} sec", "Поставлено событие NOTE_SPEED = ${spd}x на ${t.toFixed(3)} сек": "NOTE_SPEED = ${spd}x event placed at ${t.toFixed(3)} sec", "Поставь ноты на карту, чтобы увидеть график плотности NPS по секундам": "Place notes on the map to see the NPS density chart per second", "Поток летящих нот изгибается плавной синусоидальной волной (из карт SwipeTrava и Ew.mp3)": "The flow of flying notes bends in a smooth sine wave (from the SwipeTrava and Ew.mp3 maps)", "Правка (тап по ряду в Пиано-ролле сразу ставит/убирает ноту или собирает стак)": "Edit (tapping a row in the Piano Roll instantly places/removes a note or builds a stack)", "Проверка карты: всё чисто!": "Map check: all clear!", "Проверка карты: найдено ${issues.length} замечаний": "Map check: ${issues.length} issues found", "Прокрутка (1 палец — двигать дорожку, 2 пальца — зум)": "Scroll (1 finger — move the lane, 2 fingers — zoom)", "Пульсирующие тени с краёв экрана с хроматическим сдвигом и зерном": "Pulsing edge shadows with chromatic shift and grain", "Радиальное размытие и зум к центру": "Radial blur and zoom toward the center", "Распаковка ${file.name}...": "Unpacking ${file.name}...", "Реверс дорожки: линия удара переезжает влево, ноты летят справа налево": "Lane reverse: the hit line moves left, notes fly right to left", "Режим живой записи включён: запусти трек и нажимай кнопки направлений (или клавиши WASD/стрелки) в такт!": "Live recording mode on: start the track and press the direction buttons (or WASD/arrow keys) in time!", "Режим живой записи выключен": "Live recording mode off", "Режим таймлайна: ${titles[state.timelineTouchMode] || state.timelineTouchMode}": "Timeline mode: ${titles[state.timelineTouchMode] || state.timelineTouchMode}", "Резкий ударный шейк камеры": "Sharp impact camera shake", "Резкое квантование палитры цветов": "Harsh color palette quantization", "Ретро-пикселизация изображения на время duration (из карты Hi-Tech)": "Retro image pixelation for duration (from the Hi-Tech map)", "Ритмичное переливание неоновых цветов и прожекторов в такт биту на время duration (из карты Hi-Tech)": "Rhythmic shifting of neon colors and spotlights on the beat for duration (from the Hi-Tech map)", "Сдвинуто: ${notesToMove.length} нот, ${eventsToMove.length} ив. на ${deltaSec > 0 ? '+' : ''}${Math.round(deltaSec * 1000)} мс": "Shifted: ${notesToMove.length} notes, ${eventsToMove.length} ev. by ${deltaSec > 0 ? '+' : ''}${Math.round(deltaSec * 1000)} ms", "Сильное расслоение RGB-каналов экрана на время duration (из карты Tearout)": "Strong RGB channel split of the screen for duration (from the Tearout map)", "Синусоидальное искривление экрана": "Sinusoidal screen warp", "Скачан файл chart.json (со скрытой меткой SwipEdit)": "chart.json downloaded (with hidden SwipEdit mark)", "Сконвертирован Godot ${f.name} (${conv.sourceFormat} ${conv.width}×${conv.height}) → Cover.png": "Godot ${f.name} converted (${conv.sourceFormat} ${conv.width}×${conv.height}) → Cover.png", "Сконвертирован Godot ${f.name} → ${conv.fileName} (${conv.packetsCount} пакетов, ${conv.sampleRate} Гц)": "Godot ${f.name} converted → ${conv.fileName} (${conv.packetsCount} packets, ${conv.sampleRate} Hz)", "Скопировано вперёд (+${span.toFixed(3)}с): ${newNotes.length} нот, ${newEvents.length} ивентов": "Copied forward (+${span.toFixed(3)}s): ${newNotes.length} notes, ${newEvents.length} events", "Скорость проигрывания превью: ${rate}x": "Preview playback speed: ${rate}x", "Скрывает счётчик комбо и интерфейс перед появлением кастомных надписей TEXT (как на карте Hi-Tech)": "Hides the combo counter and UI before custom TEXT labels appear (as on the Hi-Tech map)", "Сложность в meta.json установлена по расчёту плотности: ${rounded} ★ (${st.sdpPoints.toFixed(1)} pts)": "Difficulty in meta.json set from density calculation: ${rounded} ★ (${st.sdpPoints.toFixed(1)} pts)", "Сначала выдели одну или несколько нот/событий для дублирования": "First select one or more notes/events to duplicate", "Событие ${typeId} добавлено на ${t.toFixed(3)} сек": "Event ${typeId} added at ${t.toFixed(3)} sec", "Стак-режим включён: новые ноты на том же таймкоде складываются в вертикальный стак": "Stack mode on: new notes on the same timecode stack vertically", "Стак-режим выключен: нота на том же таймкоде заменяет предыдущую (в Пиано-ролле стаки доступны всегда)": "Stack mode off: a note on the same timecode replaces the previous one (stacks are always available in the Piano Roll)", "Стандартное направление: ноты летят слева направо к линии удара": "Standard direction: notes fly left to right toward the hit line", "Т${barNum} (${t.toFixed(2)}s)": "B${barNum} (${t.toFixed(2)}s)", "ТАКТ (${state.timeSigNum}/${state.timeSigDen})": "BAR (${state.timeSigNum}/${state.timeSigDen})", "ТАКТЫ (${state.timeSigNum}/${state.timeSigDen})": "BARS (${state.timeSigNum}/${state.timeSigDen})", "Тактовый размер метронома и сетки: ${n}/${d}": "Metronome and grid time signature: ${n}/${d}", "Трёхслойный пепел на ветру, горячее марево и тёплый пепельный грейд": "Three-layer ash in the wind, hot haze and warm ash grade", "Убрана нота ${noteType} на ${t.toFixed(3)} сек": "Note ${noteType} removed at ${t.toFixed(3)} sec", "Удалено выделенных элементов: ${delCount}": "Selected items deleted: ${delCount}", "Упаковка .swmap архива...": "Packing .swmap archive...", "Цифровой глитч с разрывом полос и сдвигом сканлайнов": "Digital glitch with striped tearing and scanline shift", "Шейдерные пост-эффекты (FX_*)": "Shader post-effects (FX_*)", "Элемент удалён": "Item deleted", "Эффект интро/концовки с кинематографичными полосами и виньеткой": "Intro/ending effect with cinematic bars and vignette", "Эффект старого телевизора со сканлайнами и помехами": "Old TV effect with scanlines and static", "Яркая вспышка: при duration = 0 — короткая ударная, при duration > 0 — долгая плавная (как на Hi-Tech)": "Bright flash: at duration = 0 — short impact, at duration > 0 — long smooth (as on Hi-Tech)", "мгновенный / триггер": "instant / trigger", "ℹ Последний NOTE_SPEED равен ${speedEvs[speedEvs.length - 1].speed}x (не сброшен обратно в 1.0x до конца карты).": "ℹ Last NOTE_SPEED is ${speedEvs[speedEvs.length - 1].speed}x (not reset back to 1.0x until the end of the map).", "ℹ У ноты ${n.type} на ${n.time.toFixed(3)}с нет явного события ${expected} (игра сама добавит его через _heal_missing_reverse_events).": "ℹ Note ${n.type} at ${n.time.toFixed(3)}s has no explicit ${expected} event (the game will add it itself via _heal_missing_reverse_events).", "⏸ Пауза": "⏸ Pause", "⚠ Внимание: реверс на <= 1.0с сработает в игре сразу со старта (EARLY_EVENT_WINDOW)!": "⚠ Warning: a reverse at <= 1.0s will trigger in the game right from the start (EARLY_EVENT_WINDOW)!", "⚠ Дубликат одинаковой ноты ${notes[i].type} в одном стаке на ${notes[i].time.toFixed(3)}с.": "⚠ Duplicate of the same note ${notes[i].type} in one stack at ${notes[i].time.toFixed(3)}s.", "⚠ Нота ${n.type} на ${n.time.toFixed(3)}с стоит в первой секунде (<= 1.0с): из-за EARLY_EVENT_WINDOW в игре дорожка развернётся сразу на 0.0с.": "⚠ Note ${n.type} at ${n.time.toFixed(3)}s is in the first second (<= 1.0s): because of EARLY_EVENT_WINDOW the lane will reverse right at 0.0s in the game.", "⚠ Реверс на <= 1.0 сек: в игре сработает сразу со старта (EARLY_EVENT_WINDOW)": "⚠ Reverse at <= 1.0 sec: will trigger in the game right from the start (EARLY_EVENT_WINDOW)", "⚠ Событие NOTES_FLOW_RIGHT на ${ev.time.toFixed(3)}с (<= 1.0с) развернёт поток сразу при старте уровня.": "⚠ NOTES_FLOW_RIGHT event at ${ev.time.toFixed(3)}s (<= 1.0s) will reverse the flow right at level start.", "✅ Проблем не найдено! Нот: ${notes.length}, стаков: ${state.lastStats ? state.lastStats.stacksCount : 0}, событий: ${events.length}.": "✅ No problems found! Notes: ${notes.length}, stacks: ${state.lastStats ? state.lastStats.stacksCount : 0}, events: ${events.length}.", "🎬 ${state.chart.backgroundFile} (${sizeMb} МБ, упакован в .swmap; для превью в этом браузере можно выбрать 👁 Превью-видео)": "🎬 ${state.chart.backgroundFile} (${sizeMb} MB, packed in .swmap; for preview in this browser you can choose 👁 Preview video)", "🎬 ${state.chart.backgroundFile} (${v.videoWidth}×${v.videoHeight}, ${sizeMb} МБ)": "🎬 ${state.chart.backgroundFile} (${v.videoWidth}×${v.videoHeight}, ${sizeMb} MB)", "🎬 ${state.chart.backgroundFile} + превью ${fileName} (${v.videoWidth}×${v.videoHeight})": "🎬 ${state.chart.backgroundFile} + preview ${fileName} (${v.videoWidth}×${v.videoHeight})", "📐 Вид: Вкладки (Мобильный)": "📐 View: Tabs (Mobile)", "🔴 Другой редактор": "🔴 Other editor", "🔴 ЗАПИСЬ ВКЛ": "🔴 RECORDING ON", "🖥 Вид: Плитки (ПК)": "🖥 View: Tiles (PC)", "🟢 SwipEdit (Офиц. OST)": "🟢 SwipEdit (Official OST)", "🟢 Создано в SwipEdit": "🟢 Made in SwipEdit", "🎮 Превью и Звук": "🎮 Preview & Audio", "🎹 Таймлайн и Ноты": "🎹 Timeline & Notes", "⚡ Эффекты (36)": "⚡ Effects (36)", "🎵 Карта и Плейлисты (24)": "🎵 Map & Playlists (24)", "95-й перцентиль: ": "95th percentile: ", "<label>Длительность duration (сек)\n            <input type=\"number\" id=\"insp-ev-duration\" step=\"0.05\" min=\"0.05\" value=\"": "<label>Duration (sec)\n            <input type=\"number\" id=\"insp-ev-duration\" step=\"0.05\" min=\"0.05\" value=\"", "<label>Множитель скорости speed\n            <input type=\"number\" id=\"insp-ev-speed\" step=\"0.05\" min=\"0.1\" max=\"10\" value=\"": "<label>Speed multiplier speed\n            <input type=\"number\" id=\"insp-ev-speed\" step=\"0.05\" min=\"0.1\" max=\"10\" value=\"", "<label>Надпись (text)\n            <input type=\"text\" id=\"insp-ev-text\" value=\"": "<label>Text (text)\n            <input type=\"text\" id=\"insp-ev-text\" value=\"", "<label>Цвет (color)\n            <input type=\"color\" id=\"insp-ev-color\" value=\"": "<label>Color (color)\n            <input type=\"color\" id=\"insp-ev-color\" value=\"", "<option value=\"": "<option value=\"", "<option value=\"ALL\">Все 3 плейлиста (": "<option value=\"ALL\">All 3 playlists (", "BPM ": "BPM ", "BPM: ": "BPM: ", "Tap Tempo: ": "Tap Tempo: ", "Авто-BPM: определён темп ": "Auto-BPM: tempo detected ", "В meta.json: ": "In meta.json: ", "Выбрана дорожка ноты: ": "Note lane selected: ", "Выделенные ноты (": "Selected notes (", "Выделено рамкой: ": "Box-selected: ", "Выделено: ": "Selected: ", "Выделены все элементы: ": "All items selected: ", "Готово! Скачан архив ": "Done! Downloaded archive ", "Диагонали: ": "Diagonals: ", "Длина: ": "Length: ", "Добавлен эффект ": "Effect ", "Добавлена серия из ": "Added a series of ", "Загружен видео-фон ": "Video background ", "Загружен фон ": "Background ", "Загружена демо-карта «": "Demo map «", "Загружена карта \"": "Loaded map \"", "Загружена карта «": "Loaded map «", "Загружена обложка ": "Cover ", "Загружено аудио ": "Audio ", "Загружено видео ": "Video ", "Карта подписана скрытой меткой SwipEdit (": "The map is signed with a hidden SwipEdit mark (", "Нота ": "Note ", "Официальная карта «": "Official map «", "Ошибка конвертации .ctex: ": "Conversion error .ctex: ", "Ошибка конвертации .oggvorbisstr: ": "Conversion error .oggvorbisstr: ", "Ошибка сборки .swmap: ": "Error building .swmap: ", "Ошибка чтения .swmap: ": "Error reading .swmap: ", "Ошибка чтения .swmap:\\n": "Error reading .swmap:\\n", "По всему треку (": "Whole track (", "Подключено превью-видео ": "Preview video ", "Поставлен кастомный NOTE_SPEED = ": "Custom NOTE_SPEED = ", "Поставлено событие NOTE_SPEED = ": "NOTE_SPEED = ", "Проверка карты: найдено ": "Map check: ", "Распаковка ": "Unpacking ", "Режим таймлайна: ": "Timeline mode: ", "Сдвинуто: ": "Shifted: ", "Сконвертирован Godot ": "Godot ", "Скопировано вперёд (+": "Copied forward (+", "Скорость проигрывания превью: ": "Preview playback speed: ", "Сложность в meta.json установлена по расчёту плотности: ": "Difficulty in meta.json set from density calculation: ", "Событие ": "Event ", "ТАКТ (": "BAR (", "ТАКТЫ (": "BARS (", "Тактовый размер метронома и сетки: ": "Metronome and grid time signature: ", "Убрана нота ": "Note ", "Удалено выделенных элементов: ": "Selected items deleted: ", "ℹ Последний NOTE_SPEED равен ": "ℹ Last NOTE_SPEED is ", "ℹ У ноты ": "ℹ Note ", "⚠ Дубликат одинаковой ноты ": "⚠ Duplicate of the same note ", "⚠ Нота ": "⚠ Note ", "⚠ Событие NOTES_FLOW_RIGHT на ": "⚠ NOTES_FLOW_RIGHT event at ", "✅ Проблем не найдено! Нот: ": "✅ No problems found! Notes: ", "🎹 Ноты и Инспектор": "🎹 Notes & Inspector", "✨ Эффекты и События": "✨ Effects & Events", "📊 Аналитика и SDP": "📊 Analytics & SDP", "⚙ Карта и Файлы": "⚙ Map & Files", "📱 Режим вкладок": "📱 Tabbed Mode", "🖥 Режим плиток (ПК)": "🖥 Tile Mode (PC)", "🟢 SwipEdit": "🟢 SwipEdit", "🔴 Создано в Swipetava Maker (Друнов)": "🔴 Made in Swipetava Maker (Drunov)", "🔴 Сторонний редактор": "🔴 Third-party Editor", "Ничего не выбрано. Кликни по ноте или ивенту на таймлайне.": "Nothing selected. Click a note or event on the timeline."};
+
+  const I18N_REGEX_EN = [
+    [/^Выделено:\s*(\d+)\s*нот,\s*(\d+)\s*событий$/i, 'Selected: $1 notes, $2 events'],
+    [/^Выделено:\s*(\d+)$/i, 'Selected: $1'],
+    [/^Такт\s+(\d+\.\d+)\s*\((\d+\/\d+)\)$/i, 'Bar $1 ($2)'],
+    [/^Такт\s+(\d+\.\d+)$/i, 'Bar $1'],
+    [/^Нота\s+([A-Z_]+)\s+поставлена на\s+([\d.]+)\s*сек$/i, 'Note $1 placed at $2 s'],
+    [/^Нота\s+([A-Z_]+)\s+удалена$/i, 'Note $1 deleted'],
+    [/^Событие\s+([A-Z0-9_]+)\s+добавлено на\s+([\d.]+)\s*сек$/i, 'Event $1 added at $2 s'],
+    [/^Загружена карта:\s*(.+)$/i, 'Loaded map: $1'],
+    [/^Готово\s*·\s*(.+)$/i, 'Ready · $1'],
+    [/^Авто-генерация\s+(.+)$/i, 'Auto-generated $1'],
+    [/^Загружен\s+(.+)$/i, 'Loaded $1'],
+    [/^(\d+)\s+нот\s*\/\s*(\d+)\s+событий$/i, '$1 notes / $2 events']
+  ];
+
+  function translateTextToEn(raw) {
+    if (!raw || typeof raw !== 'string') return raw;
+    const trimmed = raw.trim();
+    if (!trimmed) return raw;
+    if (I18N_DICT_EN[trimmed] !== undefined) {
+      return raw.replace(trimmed, I18N_DICT_EN[trimmed]);
+    }
+    const norm = trimmed.replace(/\s+/g, ' ');
+    if (I18N_DICT_EN[norm] !== undefined) {
+      return raw.replace(trimmed, I18N_DICT_EN[norm]);
+    }
+    for (let i = 0; i < I18N_REGEX_EN.length; i++) {
+      const [rx, repl] = I18N_REGEX_EN[i];
+      if (rx.test(norm)) {
+        return raw.replace(trimmed, norm.replace(rx, repl));
+      }
+    }
+    return raw;
+  }
+
+  function isInsideEasterEgg(el) {
+    if (!el || !el.closest) return false;
+    return Boolean(el.closest('#cubeface-modal'));
+  }
+
+  function applyLanguageToSubtree(root, lang) {
+    if (!root) return;
+    const isEn = lang === 'en';
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    let node;
+    while ((node = walker.nextNode())) {
+      const parent = node.parentElement;
+      if (!parent) continue;
+      const tag = parent.tagName;
+      if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'CODE') continue;
+      if (isInsideEasterEgg(parent)) continue;
+      const val = node.nodeValue || '';
+      if (!val.trim()) continue;
+      if (isEn) {
+        if (node._origRu === undefined && /[А-Яа-яЁё]/.test(val)) {
+          node._origRu = val;
+        }
+        const src = node._origRu !== undefined ? node._origRu : val;
+        const tr = translateTextToEn(src);
+        if (tr !== val) node.nodeValue = tr;
+      } else {
+        if (node._origRu !== undefined && node.nodeValue !== node._origRu) {
+          node.nodeValue = node._origRu;
+        }
+      }
+    }
+
+    if (root.querySelectorAll) {
+      const els = root.querySelectorAll('[title], [placeholder]');
+      els.forEach((el) => {
+        if (isInsideEasterEgg(el)) return;
+        ['title', 'placeholder'].forEach((attr) => {
+          if (!el.hasAttribute(attr)) return;
+          const cur = el.getAttribute(attr) || '';
+          const propKey = '_origRu_' + attr;
+          if (isEn) {
+            if (el[propKey] === undefined && /[А-Яа-яЁё]/.test(cur)) {
+              el[propKey] = cur;
+            }
+            const src = el[propKey] !== undefined ? el[propKey] : cur;
+            const tr = translateTextToEn(src);
+            if (tr !== cur) el.setAttribute(attr, tr);
+          } else {
+            if (el[propKey] !== undefined && cur !== el[propKey]) {
+              el.setAttribute(attr, el[propKey]);
+            }
+          }
+        });
+      });
+    }
+  }
+
+  let _i18nObserverBusy = false;
+  function setEditorLanguage(lang) {
+    state.lang = lang === 'en' ? 'en' : 'ru';
+    document.documentElement.lang = state.lang;
+    try { localStorage.setItem('swipedit_lang', state.lang); } catch (_) {}
+    document.querySelectorAll('#lang-switch-group [data-lang]').forEach((btn) => {
+      const active = btn.getAttribute('data-lang') === state.lang;
+      btn.classList.toggle('active', active);
+      btn.style.background = active ? 'var(--accent)' : 'transparent';
+      btn.style.color = active ? '#fff' : 'var(--text-secondary)';
+    });
+    _i18nObserverBusy = true;
+    try {
+      applyLanguageToSubtree(document.body, state.lang);
+    } finally {
+      _i18nObserverBusy = false;
+    }
+    renderPreviewCanvas();
+    renderTimelineCanvas();
+  }
+
+  function initLocalization() {
+    state.lang = 'ru';
+    document.querySelectorAll('#lang-switch-group [data-lang]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        setEditorLanguage(btn.getAttribute('data-lang'));
+      });
+    });
+    const obs = new MutationObserver((mutations) => {
+      if (state.lang !== 'en' || _i18nObserverBusy) return;
+      _i18nObserverBusy = true;
+      try {
+        for (let i = 0; i < mutations.length; i++) {
+          const m = mutations[i];
+          if (m.type === 'characterData' && m.target && m.target.parentElement) {
+            if (!isInsideEasterEgg(m.target.parentElement)) {
+              const val = m.target.nodeValue || '';
+              if (/[А-Яа-яЁё]/.test(val)) {
+                m.target._origRu = val;
+                const tr = translateTextToEn(val);
+                if (tr !== val) m.target.nodeValue = tr;
+              }
+            }
+          } else if (m.type === 'childList' && m.target) {
+            applyLanguageToSubtree(m.target, 'en');
+          }
+        }
+      } finally {
+        _i18nObserverBusy = false;
+      }
+    });
+    obs.observe(document.body, { childList: true, subtree: true, characterData: true });
+    try {
+      const saved = localStorage.getItem('swipedit_lang');
+      if (saved === 'en') setEditorLanguage('en');
+    } catch (_) {}
+  }
+
+  window.addEventListener('DOMContentLoaded', () => { initUI(); initLocalization(); });
 })();
