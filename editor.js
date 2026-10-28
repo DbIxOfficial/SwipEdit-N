@@ -1565,22 +1565,52 @@
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
+    if (!canvas._hiDpiHooked) {
+      const proto = HTMLCanvasElement.prototype;
+      const descW = Object.getOwnPropertyDescriptor(proto, 'width');
+      const descH = Object.getOwnPropertyDescriptor(proto, 'height');
+      canvas._getPhysW = () => descW.get.call(canvas);
+      canvas._setPhysW = (v) => descW.set.call(canvas, v);
+      canvas._getPhysH = () => descH.get.call(canvas);
+      canvas._setPhysH = (v) => descH.set.call(canvas, v);
+      Object.defineProperty(canvas, 'width', {
+        configurable: true,
+        get() { return this._logicalW || descW.get.call(this); },
+        set(v) { this._logicalW = Number(v) || 360; }
+      });
+      Object.defineProperty(canvas, 'height', {
+        configurable: true,
+        get() { return this._logicalH || descH.get.call(this); },
+        set(v) { this._logicalH = Number(v) || 356; }
+      });
+      canvas._hiDpiHooked = true;
+    }
+
     const wrap = canvas.parentElement;
     const cssW = Math.max(320, Math.round((wrap && wrap.clientWidth) || canvas.clientWidth || 360));
     const desiredH = state.timelineViewMode === 'pianoroll' ? 356 : 236;
+    const dpr = Math.min(3, Math.max(1, window.devicePixelRatio || 1));
+    const physW = Math.round(cssW * dpr);
+    const physH = Math.round(desiredH * dpr);
+
+    canvas._logicalW = cssW;
+    canvas._logicalH = desiredH;
 
     if (canvas.style.height !== `${desiredH}px`) {
       canvas.style.height = `${desiredH}px`;
     }
-    if (canvas.width !== cssW) {
-      canvas.width = cssW;
+    if (canvas._getPhysW() !== physW) {
+      canvas._setPhysW(physW);
     }
-    if (canvas.height !== desiredH) {
-      canvas.height = desiredH;
+    if (canvas._getPhysH() !== physH) {
+      canvas._setPhysH(physH);
     }
 
-    const W = canvas.width;
-    const H = canvas.height;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+
+    const W = cssW;
+    const H = desiredH;
     const labelW = getTimelineLabelWidth(W);
     const layout = getTimelineTrackLayout(H);
 
@@ -1679,14 +1709,16 @@
     const waveHalfH = (layout.waveBottom - layout.waveTop) * 0.44;
     if (state.waveformPeaks && state.duration > 0) {
       const peaks = state.waveformPeaks;
+      const stepPx = dpr >= 2 ? 1 : 2;
+      const barW = dpr >= 2 ? 0.85 : 1.5;
       ctx.fillStyle = 'rgba(56, 189, 248, 0.55)';
-      for (let px = labelW; px < W; px += 2) {
+      for (let px = labelW; px < W; px += stepPx) {
         const t = xToTime(px, labelW);
         if (t < 0 || t > state.duration) continue;
         const pIdx = Math.floor((t / state.duration) * peaks.length);
         const amp = peaks[Math.min(peaks.length - 1, Math.max(0, pIdx))] || 0;
         const h = Math.max(1, amp * waveHalfH * 2);
-        ctx.fillRect(px, waveMidY - h / 2, 1.5, h);
+        ctx.fillRect(px, waveMidY - h / 2, barW, h);
       }
     } else {
       ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
@@ -1895,6 +1927,7 @@
 
     updateMultiSelectBarUI();
   }
+
 
   function hashCode(str) {
     let h = 0;
