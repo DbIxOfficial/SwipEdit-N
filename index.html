@@ -1299,7 +1299,7 @@
     <div class="app-tabs-pills" id="app-tabs-pills">
       <button type="button" class="app-tab-btn active" data-app-tab="preview">🎬 Превью</button>
       <button type="button" class="app-tab-btn" data-app-tab="notes">🎹 Смещение</button>
-      <button type="button" class="app-tab-btn" data-app-tab="events">✨ События и FX (36)</button>
+      <button type="button" class="app-tab-btn" data-app-tab="events">✨ События и FX</button>
       <button type="button" class="app-tab-btn" data-app-tab="stats">📊 Статистика</button>
       <button type="button" class="app-tab-btn" data-app-tab="map">🎵 Информация</button>
     </div>
@@ -1589,42 +1589,12 @@
       </div>
     </section>
 
-    <!-- ПРАВАЯ КОЛОНКА: НОТЫ, ЭФФЕКТЫ, СКОРОСТЬ СКРОЛЛА И НАДПИСИ ВМЕСТО КОМБО -->
+    <!-- ПРАВАЯ КОЛОНКА: ЭФФЕКТЫ, СКОРОСТЬ СКРОЛЛА И НАДПИСИ ВМЕСТО КОМБО -->
     <section class="panel panel-fx">
       <div class="panel-header">
-        <span>Ноты, скорость, эффекты и надписи</span>
+        <span>Скорость, эффекты и надписи</span>
       </div>
       <div class="panel-body">
-
-        <!-- палитра нот -->
-        <div class="section-box" id="note-palette-box">
-          <div class="section-title">
-            <span>Палитра нот (8 свайпов + реверс)</span>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <label class="chk-label" title="Наслаивать ноты разных направлений в один вертикальный стак на одном таймкоде">
-                <input type="checkbox" id="note-stack-mode-check" checked /> 📚 Режим стака
-              </label>
-              <label class="chk-label" title="Сразу ставить ноту при клике по кнопке направления">
-                <input type="checkbox" id="note-click-places-check" checked /> Ставить кликом
-              </label>
-            </div>
-          </div>
-          <div id="note-pad-grid" class="note-pad-grid"></div>
-          <div id="note-extra-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;"></div>
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin-top:4px;">
-            <span style="font-size:11px;color:var(--text-secondary);">Микро-сдвиг ноты:</span>
-            <div style="display:flex;gap:4px;">
-              <button type="button" class="btn btn-sm" data-nudge-ms="-10">-10мс</button>
-              <button type="button" class="btn btn-sm" data-nudge-ms="-1">-1мс</button>
-              <button type="button" class="btn btn-sm" data-nudge-ms="1">+1мс</button>
-              <button type="button" class="btn btn-sm" data-nudge-ms="10">+10мс</button>
-            </div>
-          </div>
-          <label class="chk-label" style="margin-top:2px;">
-            <input type="checkbox" id="reverse-autoflow-check" checked />
-            Авто-синхронизация <code>REVERSE → NOTES_FLOW_RIGHT</code> и <code>REVERSE_BACK → NOTES_FLOW_LEFT</code> (с защитой 1-й секунды)
-          </label>
-        </div>
 
         <!-- смена скорости прокрутки (с кастомным значением) -->
         <div class="section-box">
@@ -1759,10 +1729,8 @@
               <option value="TEXT">Только TEXT</option>
               <option value="NOTE_SPEED">Только NOTE_SPEED</option>
               <option value="FLOW_CAM">Дорожка и камера</option>
-    <!-- панель с аналитикой -->
               <option value="FX">Только шейдеры FX_*</option>
             </select>
-        <span>Плотность чарта (NPS) и объективная сложность в баллах (SDP)</span>
           </div>
           <div style="max-height:150px;overflow-y:auto;">
             <table class="compact-table">
@@ -1854,6 +1822,12 @@
           <div class="section-title">
             <span>📈 График плотности нот по секундам (клик по пику — переход к дропу)</span>
             <span id="nps-chart-hint" style="font-size:11px;color:var(--text-secondary);">1 столбик = 1 секунда</span>
+          </div>
+          <div class="nps-chart-wrap">
+            <canvas id="nps-chart-canvas" width="920" height="110"></canvas>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -1877,6 +1851,12 @@
           <button type="button" class="touch-mode-btn" data-touch-mode="scroll">🖐 Прокрутка / Зум</button>
           <button type="button" class="touch-mode-btn" data-touch-mode="erase">🧹 Ластик</button>
         </div>
+        <label class="chk-label" title="Наслаивать ноты разных направлений в один вертикальный стак на одном таймкоде">
+          <input type="checkbox" id="note-stack-mode-check" checked /> 📚 Режим стака
+        </label>
+        <label class="chk-label" title="Авто-синхронизация REVERSE → NOTES_FLOW_RIGHT и REVERSE_BACK → NOTES_FLOW_LEFT (с защитой 1-й секунды)">
+          <input type="checkbox" id="reverse-autoflow-check" checked /> 🔄 Авто-синк <code>REVERSE ↔ FLOW</code>
+        </label>
         <label for="zoom-range" style="font-size:11px;color:var(--text-secondary);">Масштаб:</label>
         <input type="range" id="zoom-range" min="40" max="600" value="180" style="width:120px;" />
       </div>
