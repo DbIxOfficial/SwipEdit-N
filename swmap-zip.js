@@ -342,6 +342,14 @@
       const cdExtraLen = isJsonMeta ? swExtra.length : 0;
       const entryCrc = crc;
 
+      const mtimeDate = (item.mtime instanceof Date && !isNaN(item.mtime.getTime())) ? item.mtime : new Date();
+      const dosTime = ((mtimeDate.getHours() & 0x1F) << 11)
+        | ((mtimeDate.getMinutes() & 0x3F) << 5)
+        | (Math.floor(mtimeDate.getSeconds() / 2) & 0x1F);
+      const dosDate = (((Math.max(1980, mtimeDate.getFullYear()) - 1980) & 0x7F) << 9)
+        | (((mtimeDate.getMonth() + 1) & 0x0F) << 5)
+        | (mtimeDate.getDate() & 0x1F);
+
       prepared.push({
         nameBytes,
         rawLen: rawBytes.length,
@@ -351,7 +359,9 @@
         crc: entryCrc,
         offset: totalLocalSize,
         isJsonMeta,
-        cdExtraLen
+        cdExtraLen,
+        dosTime,
+        dosDate
       });
 
       totalLocalSize += 30 + nameBytes.length + compBytes.length;
@@ -368,8 +378,8 @@
       view.setUint16(pos + 4, 20, true);
       view.setUint16(pos + 6, 0x0800, true);
       view.setUint16(pos + 8, p.method, true);
-      view.setUint16(pos + 10, 0, true);
-      view.setUint16(pos + 12, 0x554b, true);
+      view.setUint16(pos + 10, p.dosTime, true);
+      view.setUint16(pos + 12, p.dosDate, true);
       view.setUint32(pos + 14, p.crc, true);
       view.setUint32(pos + 18, p.compLen, true);
       view.setUint32(pos + 22, p.rawLen, true);
@@ -387,8 +397,8 @@
       view.setUint16(pos + 6, 20, true);
       view.setUint16(pos + 8, 0x0800, true);
       view.setUint16(pos + 10, p.method, true);
-      view.setUint16(pos + 12, 0, true);
-      view.setUint16(pos + 14, 0x554b, true);
+      view.setUint16(pos + 12, p.dosTime, true);
+      view.setUint16(pos + 14, p.dosDate, true);
       view.setUint32(pos + 16, p.crc, true);
       view.setUint32(pos + 20, p.compLen, true);
       view.setUint32(pos + 24, p.rawLen, true);
