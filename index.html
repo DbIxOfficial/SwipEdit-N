@@ -1272,11 +1272,14 @@
     </div>
 
     <div class="toolbar-actions">
+      <button type="button" class="btn" id="btn-new-map" title="Создать новую пустую карту">
+        🆕 Новая карта
+      </button>
       <label class="btn btn-primary" title="Открыть существующий .swmap или перетащить файл на страницу">
         📂 Открыть .swmap
         <input type="file" id="input-swmap-file" accept=".swmap,.zip" hidden />
       </label>
-      <button type="button" class="btn" id="btn-load-demo" title="Загрузить демо-карту из 1.1 (Tutorial — Arvicheskyy)">
+      <button type="button" class="btn" id="btn-load-demo" title="Загрузить демо-карту (Tutorial — Arvicheskyy)">
         ✨ Демо
       </button>
       <button type="button" class="btn" id="btn-undo" title="Отменить (Ctrl+Z)">↶ Отмена</button>
@@ -1454,14 +1457,20 @@
           <div class="asset-row" style="flex-direction:column;align-items:stretch;gap:6px;">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
               <div style="flex:1;min-width:170px;">
-                <div><strong>Фон (картинка / <code>.ogv</code> видео):</strong> <span id="asset-bg-status" class="asset-status">Авто-генерация 1280×720</span></div>
-                <input type="text" id="chart-bg-file" value="bg.png" style="margin-top:3px;font-size:11px;" title="Имя фонового файла в chart.json (например bg.png или bg.ogv)" />
+                <div><strong>Фон (картинка / <code>.ogv</code> видео):</strong> <span id="asset-bg-status" class="asset-status">По умолчанию (фон игры)</span></div>
+                <input type="text" id="chart-bg-file" value="" placeholder="По умолчанию (фон игры)" style="margin-top:3px;font-size:11px;" title="Оставь пустым, чтобы использовать дефолтный/пользовательский фон самой игры, или укажи bg.png / bg.ogv" />
               </div>
               <div style="display:flex;gap:5px;flex-wrap:wrap;">
-                <label class="btn btn-sm btn-primary" title="Загрузить фоновую картинку (.png/.jpg/.webp) или готовый видео-фон .ogv напрямую в архив .swmap без перекодирования">
+                <label class="btn btn-sm btn-primary" title="Загрузить фоновую картинку (.png/.jpg/.webp) или готовый видео-фон .ogv напрямую в архив .swmap">
                   🌌 Фон / .ogv
                   <input type="file" id="input-bg-file" accept="image/*,.ogv,video/ogg,video/mp4,video/webm" hidden />
                 </label>
+                <button type="button" class="btn btn-sm" id="btn-gen-bg-gradient" title="Сгенерировать градиентный фон 1280×720 под цвет меню карты и вшить как bg.png">
+                  🎨 Градиент
+                </button>
+                <button type="button" class="btn btn-sm" id="btn-clear-bg" title="Убрать фон из карты (в игре останется стандартный или кастомный фон игрока)">
+                  ✕ Сброс
+                </button>
                 <label class="btn btn-sm" id="label-bg-preview-video" title="Опционально: если мобильный браузер не декодирует Ogg Theora (.ogv) в превью, подставь любой .mp4/.webm чисто для предпросмотра (в .swmap уйдёт твой .ogv)">
                   👁 Превью-видео
                   <input type="file" id="input-bg-preview-video" accept="video/*" hidden />
@@ -1851,9 +1860,6 @@
           <button type="button" class="touch-mode-btn" data-touch-mode="scroll">🖐 Прокрутка / Зум</button>
           <button type="button" class="touch-mode-btn" data-touch-mode="erase">🧹 Ластик</button>
         </div>
-        <label class="chk-label" title="Наслаивать ноты разных направлений в один вертикальный стак на одном таймкоде">
-          <input type="checkbox" id="note-stack-mode-check" checked /> 📚 Режим стака
-        </label>
         <label class="chk-label" title="Авто-синхронизация REVERSE → NOTES_FLOW_RIGHT и REVERSE_BACK → NOTES_FLOW_LEFT (с защитой 1-й секунды)">
           <input type="checkbox" id="reverse-autoflow-check" checked /> 🔄 Авто-синк <code>REVERSE ↔ FLOW</code>
         </label>
@@ -1897,59 +1903,71 @@
     <div class="sdp-modal-card" role="dialog" aria-modal="true" aria-labelledby="sdp-modal-title">
       <button type="button" class="cubeface-modal-close" id="btn-close-sdp-modal" title="Закрыть">✕</button>
       <div style="font-size:15px;font-weight:800;color:var(--accent-2);" id="sdp-modal-title">
-        📐 Формула объективной сложности SDP (SwipEdit's Difficulty Points)
+        📐 Формула объективной сложности SDP v2.0 (SwipEdit's Difficulty Points)
       </div>
       <div style="color:var(--text-secondary);font-size:12px;">
-        В отличие от ручного поля <code>difficulty</code> в <code>meta.json</code> (которое в игре ограничено <code>10.0★</code> и выставляется автором вручную), оценка <strong>SDP</strong> вычисляется напрямую из геометрии и таймингов чарта и <strong>не имеет верхнего потолка</strong> — это позволяет объективнее оценивать сложность у множества карт.
+        В отличие от ручного поля <code>difficulty</code> в <code>meta.json</code> (которое в игре ограничено <code>10.0★</code> и выставляется автором вручную), оценка <strong>SDP</strong> и <strong>Честные звёзды (Auto ★)</strong> вычисляются напрямую из физики чарта: интервалов между нотами, скорости и дёрганий скролла, геометрии паттернов и тяжести визуальных эффектов — без потолка и без привязки к конкретным картам. Это позволяет объективнее оценивать сложность у множества различных карт.
       </div>
 
       <div>
-        <strong>1. Плотность и активный отрезок (Active Span):</strong>
+        <strong>1. Временное расстояние между нотами (Δt_mean, Δt_p25) и плотность:</strong>
         <div class="sdp-formula-box">
-          T_span = max(1.0, t_last_note − t_first_note)<br/>
-          NPS_avg = N_notes / T_span &nbsp;|&nbsp; NPS_peak3s = max_window_3s / 3.0
-        </div>
-      </div>
-
-      <div>
-        <strong>2. Вес каждого таймкода (w_i) — стаки, диагонали, углы и реверсы:</strong>
-        <div class="sdp-formula-box">
-          w_i = 1.0 + 0.55·(k_i − 1) + 0.15·D_i + 0.65·R_i + 0.22·(Δθ_i / 180°)
+          T_span = max(1.0, t_last − t_first) &nbsp;|&nbsp; NPS_avg = N_notes / T_span<br/>
+          R_spacing = 0.55 · (1 / max(0.075, Δt_mean)) + 0.45 · (1 / max(0.065, Δt_p25))
         </div>
         <div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">
-          • <code>k_i</code> — число нот в вертикальном стаке на одном таймкоде (<code>≤ 5 мс</code>);<br/>
-          • <code>D_i</code> — наличие диагонального свайпа (<code>+0.15</code>); <code>R_i</code> — нота <code>REVERSE</code> / <code>REVERSE_BACK</code> (<code>+0.65</code>);<br/>
-          • <code>Δθ_i ≥ 90°</code> — резкий разворот направления между соседними нотами при интервале <code>Δt_i &lt; 0.35 с</code>.
+          Учитывается не только средний NPS по карте, но и реальная дистанция <code>Δt_mean</code> между соседними нотами и плотность быстрых сплитов/стримов (25-й перцентиль <code>Δt_p25</code>).
         </div>
       </div>
 
       <div>
-        <strong>3. Скорость чтения (M_speed) и мгновенный стрейн (strain_i):</strong>
+        <strong>2. Паттерны, углы, джеки, стаки, реверсы и наслоение (w_i):</strong>
         <div class="sdp-formula-box">
-          T_eff = noteTravelTime / NOTE_SPEED_i<br/>
-          M_speed = (1000 / max(180, T_eff))^0.38<br/>
-          strain_i = (w_i · M_speed) / (max(0.055, Δt_i))^0.80
-        </div>
-      </div>
-
-      <div>
-        <strong>4. Множитель длины и выносливости марафона (L_mod и E_pts):</strong>
-        <div class="sdp-formula-box">
-          L_base = clamp(T_span / 85, 0.25, 1.85)^0.45<br/>
-          B_marathon = 1 + 0.34·max(0, (T_span − 95)/55) + 0.42·max(0, (N_notes − 240)/180)<br/>
-          L_mod = L_base · B_marathon<br/>
-          E_pts = 35 · (N_notes / 100)^0.75 · (T_span / 60)^0.35
+          w_i = 1.0 + 0.60·(k_i − 1) + 0.16·D_i + 0.72·R_i + P_jack + P_turn + P_zigzag + P_overlap
         </div>
         <div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">
-          Короткие спам-карты (&lt;30 с) штрафуются множителем <code>L_base</code>, а длинные выматывающие треки (&gt;95 с и &gt;240 нот, как <em>CPAMOTA</em>) получают прогрессивный бонус выносливости.
+          • <code>k_i</code> — вертикальный стак (<code>≤ 5 мс</code>); <code>D_i</code> — диагональ; <code>R_i</code> — <code>REVERSE</code> / <code>REVERSE_BACK</code>;<br/>
+          • <code>P_jack</code> — быстрый повтор одного направления подряд (<code>Δθ = 0°</code> при <code>Δt &lt; 0.32 с</code>);<br/>
+          • <code>P_turn</code> и <code>P_zigzag</code> — резкие смены угла <code>≥ 90°</code> и серии зигзагов из 3+ нот;<br/>
+          • <code>P_overlap</code> — визуальное сближение соседних нот на дорожке (<code>Δt · 1000 &lt; 0.20 · T_eff</code>).
         </div>
       </div>
 
       <div>
-        <strong>5. Итоговый балл SDP и перевод в честные звёзды (Auto ★):</strong>
+        <strong>3. Скорость скролла, турбулентность скорости и мгновенный стрейн (M_scroll, strain_i):</strong>
         <div class="sdp-formula-box">
-          SDP = (33.5·NPS_avg + 10.8·NPS_peak3s + 6.0·mean(strain) + 3.7·P90(strain)) · L_mod + E_pts<br/>
-          Auto ★ = round_0.5(SDP / 65) &nbsp;&nbsp;(1★ ≈ 65 SDP; 1–5★ белые, 5.5–10★ красные поверх, &gt;10★ невозможная карта)
+          T_eff(i) = noteTravelTime / NOTE_SPEED(i)<br/>
+          M_scroll(i) = (1000 / clamp(T_eff, 160, 1000))^0.58 · (1 + 0.30·max(0, (T_eff − 1350)/1000)^0.70) · S_shock<br/>
+          strain_i = (w_i · M_scroll(i)) / (max(0.055, Δt_i))^0.78
+        </div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">
+          Высокая скорость пролёта (<code>2x–5x</code>, когда на чтение ноты остаётся <code>200–500 мс</code>) и частые рывки <code>NOTE_SPEED</code> (<code>S_shock</code>) кратно повышают нагрузку на реакцию.
+        </div>
+      </div>
+
+      <div>
+        <strong>4. Нагруженность по эффектам (FX_load) по тяжести для восприятия:</strong>
+        <div class="sdp-formula-box">
+          FX_load = ∑ (W_fx(type) · dur^0.35 · decay) + 0.95·N_spd_switches + 0.45·∑|Δspeed|<br/>
+          M_fx = 1 + min(0.32, 0.018 · FX_load^0.72) &nbsp;|&nbsp; FX_pts = 4.2 · FX_load^0.70 · clamp(0.5 + 0.5·(NPS_avg / 2.8), 0.5, 1.6)
+        </div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">
+          • <strong>Тяжёлые (вес 2.1–4.5):</strong> <code>BLACKOUT</code>, <code>FX_DREAD</code>, <code>FX_GLITCH</code>, <code>NOTES_SPIN_ON</code>, <code>NOTE_PUSH_ON</code>, <code>FX_OLD_TV</code>, <code>FX_ZOOM_BLUR</code>, <code>FX_INVERT</code>, <code>DISCO</code>, <code>FX_PIXELATE</code>;<br/>
+          • <strong>Средние (вес 1.0–1.9):</strong> <code>NOTES_WAVE_ON</code>, <code>FX_WAVE</code>, <code>FX_RGB_SPLIT</code>, <code>NOTES_BOUNCE_ON</code>, <code>FX_HALFTONE</code>, <code>FX_ASH_WIND</code>, <code>FX_AQUA</code>, <code>HUD_HIDE</code>;<br/>
+          • <strong>Лёгкие (вес 0.10–0.65):</strong> <code>FX_DUOTONE</code>, <code>FX_BW</code>, <code>CAMERA_BOB_ON</code>, <code>SHAKE</code>, <code>FLASH</code>, <code>BG_COLOR</code>, <code>TEXT</code>.
+        </div>
+      </div>
+
+      <div>
+        <strong>5. Зависимость множителя длины от среднего NPS (L_mod) и расчёт Честных звёзд (Auto ★):</strong>
+        <div class="sdp-formula-box">
+          T_ref = clamp(92 / (1 + 0.34·max(0, NPS_avg − 2.0) + 0.22·max(0, M_scroll_avg − 1.15)), 32, 92)<br/>
+          L_mod = clamp(T_span / T_ref, 0.22, 1.55)^0.42 · (1 + 0.22·max(0, (N_eff − 220)/170))<br/>
+          SDP = (16.0·NPS_avg·M_scroll^0.55 + 9.5·R_spacing·M_scroll^0.45 + 7.2·NPS_peak3s + 4.8·mean(strain) + 3.1·P90(strain)) · L_mod · M_fx + E_pts + FX_pts<br/>
+          Auto ★ = round_0.5((SDP / 53.0)^0.82)
+        </div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-top:3px;">
+          Чем выше средний <code>NPS</code> и скорость скролла, тем быстрее карта выходит на полный множитель длины <code>L_mod ≥ 1.0</code> (интенсивный 50-секундный уровень не занижается из-за хронометража).
         </div>
       </div>
 
