@@ -1248,9 +1248,347 @@
       to { box-shadow: 0 0 12px rgba(244, 63, 94, 0.9); }
     }
 
+
+    /* === ГОРИЗОНТАЛЬНЫЙ МОБИЛЬНЫЙ GUI (Landscape DAW + открываемое превью и дроверы) === */
+    :root {
+      --ls-top-h: 46px;
+      --ls-rail-w: 54px;
+      --ls-drawer-w: min(50vw, 440px);
+    }
+    body.ls-proto-active {
+      overflow: hidden !important;
+      height: 100dvh !important;
+      width: 100vw !important;
+      display: flex !important;
+      flex-direction: column !important;
+      background: #06050c !important;
+      user-select: none;
+    }
+    html.ls-force-rotate body.ls-proto-active {
+      position: fixed !important;
+      top: 0 !important;
+      left: 100vw !important;
+      width: 100dvh !important;
+      height: 100vw !important;
+      transform: rotate(90deg) !important;
+      transform-origin: top left !important;
+      z-index: 9999;
+    }
+    body.ls-proto-active > .topbar,
+    body.ls-proto-active > .app-tabs-bar,
+    body.ls-proto-active > #credits-footer {
+      display: none !important;
+    }
+    #ls-topbar {
+      display: none;
+      height: var(--ls-top-h);
+      min-height: var(--ls-top-h);
+      background: rgba(13, 11, 24, 0.97);
+      border-bottom: 1px solid var(--border-hi);
+      padding: 0 8px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      z-index: 120;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    #ls-topbar::-webkit-scrollbar { display: none; }
+    body.ls-proto-active #ls-topbar {
+      display: flex !important;
+    }
+    .ls-top-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .ls-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 8px;
+      border-radius: 7px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-primary);
+      white-space: nowrap;
+    }
+    .ls-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      height: 32px;
+      padding: 0 9px;
+      border-radius: 7px;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .ls-btn:hover {
+      border-color: var(--border-hi);
+      background: var(--bg-3);
+    }
+    .ls-btn.active, .ls-btn-accent {
+      background: linear-gradient(135deg, var(--accent), #6366f1) !important;
+      border-color: transparent !important;
+      color: #fff !important;
+    }
+    #ls-rail {
+      display: none;
+      position: fixed;
+      top: var(--ls-top-h);
+      left: 0;
+      bottom: 0;
+      width: var(--ls-rail-w);
+      background: rgba(12, 10, 22, 0.98);
+      border-right: 1px solid var(--border-hi);
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 4px;
+      gap: 5px;
+      z-index: 115;
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+    #ls-rail::-webkit-scrollbar { display: none; }
+    body.ls-proto-active #ls-rail {
+      display: flex !important;
+    }
+    .ls-rail-btn {
+      width: 44px;
+      height: 40px;
+      min-height: 40px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--bg-2);
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+      transition: 0.12s;
+    }
+    .ls-rail-btn span {
+      font-size: 8px;
+      font-weight: 800;
+      margin-top: 2px;
+      letter-spacing: -0.2px;
+      text-transform: none;
+    }
+    .ls-rail-btn.active {
+      background: linear-gradient(135deg, var(--accent), #6366f1);
+      color: #fff;
+      border-color: #c084fc;
+      box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+    }
+    .ls-rail-sep {
+      width: 30px;
+      height: 1px;
+      background: var(--border);
+      margin: 2px 0;
+      flex-shrink: 0;
+    }
+    body.ls-proto-active > footer.timeline-dock {
+      position: fixed !important;
+      top: var(--ls-top-h) !important;
+      left: var(--ls-rail-w) !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      margin: 0 !important;
+      border: none !important;
+      border-radius: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      background: #080b14 !important;
+      z-index: 20 !important;
+    }
+    body.ls-proto-active > footer.timeline-dock .timeline-toolbar {
+      padding: 4px 10px !important;
+      min-height: 34px;
+    }
+    body.ls-proto-active > footer.timeline-dock .timeline-toolbar > div:first-child {
+      display: none !important;
+    }
+    body.ls-proto-active > footer.timeline-dock #timeline-wrap {
+      flex: 1 1 auto !important;
+      display: flex !important;
+      align-items: stretch !important;
+      overflow: hidden !important;
+    }
+    body.ls-proto-active > footer.timeline-dock .status-footer {
+      padding: 3px 10px !important;
+      font-size: 10.5px !important;
+    }
+    /* Оверлейная область для открываемого превью и боковых дроверов (перебивает .app-tabs-mode) */
+    body.ls-proto-active > main.workspace-grid {
+      position: fixed !important;
+      inset: var(--ls-top-h) 0 0 var(--ls-rail-w) !important;
+      pointer-events: none !important;
+      z-index: 95 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      display: block !important;
+    }
+    /* В ландшафтном режиме превью ГАРАНТИРОВАННО открывается независимо от выбранной мобильной вкладки */
+    body.ls-proto-active .workspace-grid > .panel.panel-preview,
+    body.app-tabs-mode.ls-proto-active .workspace-grid > .panel.panel-preview {
+      position: absolute !important;
+      right: 12px !important;
+      bottom: 28px !important;
+      width: 250px !important;
+      max-height: calc(100% - 36px) !important;
+      pointer-events: auto !important;
+      background: rgba(15, 13, 28, 0.97) !important;
+      border: 1.5px solid var(--border-hi) !important;
+      border-radius: 12px !important;
+      box-shadow: 0 14px 38px rgba(0, 0, 0, 0.8) !important;
+      overflow-y: auto !important;
+      padding: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
+      z-index: 100 !important;
+      transition: width 0.16s ease, transform 0.18s ease, opacity 0.18s ease;
+    }
+    /* Развёрнутый режим окна превью в ландшафтном GUI */
+    body.ls-proto-active.ls-pip-expanded .workspace-grid > .panel.panel-preview,
+    body.app-tabs-mode.ls-proto-active.ls-pip-expanded .workspace-grid > .panel.panel-preview {
+      width: min(460px, calc(100vw - var(--ls-rail-w) - 24px)) !important;
+      bottom: 12px !important;
+    }
+    body.ls-proto-active.ls-pip-hidden .workspace-grid > .panel.panel-preview,
+    body.app-tabs-mode.ls-proto-active.ls-pip-hidden .workspace-grid > .panel.panel-preview {
+      display: none !important;
+      pointer-events: none !important;
+    }
+    #ls-pip-header {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      background: linear-gradient(90deg, rgba(168, 85, 247, 0.24), rgba(56, 189, 248, 0.16));
+      border-bottom: 1px solid var(--border-hi);
+      font-size: 11px;
+      font-weight: 800;
+      color: #f8fafc;
+      gap: 6px;
+    }
+    body.ls-proto-active #ls-pip-header {
+      display: flex !important;
+    }
+    body.ls-proto-active .panel-preview > .panel-header {
+      display: none !important;
+    }
+    body.ls-proto-active:not(.ls-pip-expanded) .panel-preview .transport-bar,
+    body.ls-proto-active:not(.ls-pip-expanded) .panel-preview .section-box {
+      display: none !important;
+    }
+    body.ls-proto-active .panel-preview .preview-stage {
+      padding: 8px !important;
+      gap: 6px !important;
+    }
+    body.ls-proto-active:not(.ls-pip-expanded) .panel-preview .canvas-frame {
+      max-width: 175px !important;
+      margin: 0 auto !important;
+    }
+    body.ls-proto-active.ls-pip-expanded .panel-preview .canvas-frame {
+      max-width: 260px !important;
+      margin: 0 auto !important;
+    }
+    /* Выдвижные боковые дроверы для Метаданных, Эффектов/Событий, Ноты/Смещения и Статистики SDP */
+    body.ls-proto-active .workspace-grid > .panel.panel-meta,
+    body.ls-proto-active .workspace-grid > .panel.panel-fx,
+    body.ls-proto-active .workspace-grid > .panel.panel-stats,
+    body.ls-proto-active .workspace-grid > .panel.panel-notes-tab,
+    body.app-tabs-mode.ls-proto-active .workspace-grid > .panel.panel-meta,
+    body.app-tabs-mode.ls-proto-active .workspace-grid > .panel.panel-fx,
+    body.app-tabs-mode.ls-proto-active .workspace-grid > .panel.panel-stats,
+    body.app-tabs-mode.ls-proto-active .workspace-grid > .panel.panel-notes-tab {
+      position: absolute !important;
+      top: 0 !important;
+      left: 0 !important;
+      bottom: 0 !important;
+      width: var(--ls-drawer-w) !important;
+      max-width: calc(100vw - var(--ls-rail-w) - 12px) !important;
+      background: rgba(14, 12, 26, 0.98) !important;
+      border-right: 1.5px solid var(--border-hi) !important;
+      border-radius: 0 12px 12px 0 !important;
+      box-shadow: 14px 0 38px rgba(0, 0, 0, 0.82) !important;
+      overflow-y: auto !important;
+      pointer-events: auto !important;
+      padding: 0 !important;
+      display: none !important;
+      flex-direction: column !important;
+      z-index: 105 !important;
+    }
+    body.ls-proto-active[data-ls-drawer="meta"] .workspace-grid > .panel.panel-meta,
+    body.app-tabs-mode.ls-proto-active[data-ls-drawer="meta"] .workspace-grid > .panel.panel-meta {
+      display: flex !important;
+    }
+    body.ls-proto-active[data-ls-drawer="events"] .workspace-grid > .panel.panel-fx,
+    body.app-tabs-mode.ls-proto-active[data-ls-drawer="events"] .workspace-grid > .panel.panel-fx {
+      display: flex !important;
+    }
+    body.ls-proto-active[data-ls-drawer="stats"] .workspace-grid > .panel.panel-stats,
+    body.app-tabs-mode.ls-proto-active[data-ls-drawer="stats"] .workspace-grid > .panel.panel-stats {
+      display: flex !important;
+    }
+    body.ls-proto-active[data-ls-drawer="notes"] .workspace-grid > .panel.panel-notes-tab,
+    body.app-tabs-mode.ls-proto-active[data-ls-drawer="notes"] .workspace-grid > .panel.panel-notes-tab {
+      display: flex !important;
+    }
+
   </style>
 </head>
 <body>
+
+  <!-- ВЕРХНИЙ БАР И ЛЕВЫЙ РЕЙЛ ЛАНДШАФТНОГО GUI (SWME-style Landscape DAW + открываемое превью) -->
+  <div id="ls-topbar">
+    <div class="ls-top-group">
+      <span class="ls-pill" style="background:linear-gradient(135deg,#a855f7,#6366f1);color:#fff;border:none;">SwipEdit</span>
+      <button type="button" class="ls-btn" id="ls-btn-play" title="Пуск / Пауза (Space)">▶ Пуск</button>
+      <button type="button" class="ls-btn" id="ls-btn-stop" title="В начало">⏹ Стоп</button>
+      <button type="button" class="ls-btn active" id="ls-btn-preview-top" title="Открыть / скрыть окно живого превью карты">🎬 Превью</button>
+      <span class="ls-pill" id="ls-time-pill" style="font-variant-numeric:tabular-nums;">00:00.000</span>
+      <span class="ls-pill" title="Объективная сложность SDP v2.0 и Честные звёзды">
+        SDP: <strong id="ls-sdp-readout" style="color:#facc15;">0.0</strong> (<strong id="ls-stars-readout" style="color:#38bdf8;">0.0★</strong>)
+      </span>
+    </div>
+    <div class="ls-top-group">
+      <button type="button" class="ls-btn" id="ls-btn-new" title="Создать новую пустую карту">🆕 Новая</button>
+      <button type="button" class="ls-btn" id="ls-btn-open" title="Открыть существующий .swmap или перетащить файл на страницу">📂 Открыть</button>
+      <button type="button" class="ls-btn" id="ls-btn-demo" title="Загрузить демо-карту (Tutorial — Arvicheskyy)">✨ Демо</button>
+      <button type="button" class="ls-btn ls-btn-accent" id="ls-btn-save" title="Собрать и скачать готовый архив .swmap для импорта в Swipetava">💾 .swmap</button>
+      <button type="button" class="ls-btn" id="ls-btn-fullscreen" title="Полный экран + Горизонтальный разворот (Fullscreen API / 90°)">⛶ Полный экран</button>
+      <button type="button" class="ls-btn" id="ls-btn-exit-proto" title="Вернуться в классический вид редактора">🖥 Классич. вид</button>
+    </div>
+  </div>
+
+  <aside id="ls-rail" aria-label="Инструменты горизонтального режима">
+    <button type="button" class="ls-rail-btn active" data-ls-tool="draw" title="Карандаш / Правка нот">✎<span>Правка</span></button>
+    <button type="button" class="ls-rail-btn" data-ls-tool="select" title="Выделение рамкой и перетаскивание группы">⬚<span>Рамка</span></button>
+    <button type="button" class="ls-rail-btn" data-ls-tool="scroll" title="Прокрутка и зум таймлайна">🖐<span>Скролл</span></button>
+    <button type="button" class="ls-rail-btn" data-ls-tool="erase" title="Ластик">🧹<span>Ластик</span></button>
+    <div class="ls-rail-sep"></div>
+    <button type="button" class="ls-rail-btn" id="ls-rail-undo" title="Отменить (Ctrl+Z)">↶<span>Undo</span></button>
+    <button type="button" class="ls-rail-btn" id="ls-rail-redo" title="Повторить (Ctrl+Y)">↷<span>Redo</span></button>
+    <div class="ls-rail-sep"></div>
+    <button type="button" class="ls-rail-btn active" id="ls-rail-pip" title="Открыть / скрыть окно живого превью карты">🎬<span>Превью</span></button>
+    <button type="button" class="ls-rail-btn" data-ls-drawer-btn="events" title="Открыть панель Событий, Шейдеров и NOTE_SPEED">⚡<span>Ивенты</span></button>
+    <button type="button" class="ls-rail-btn" data-ls-drawer-btn="meta" title="Открыть параметры карты, Аудио, Фон и Плейлисты">⚙<span>Карта</span></button>
+    <button type="button" class="ls-rail-btn" data-ls-drawer-btn="stats" title="Открыть статистику NPS и SDP v2.0">📊<span>SDP</span></button>
+  </aside>
 
   <!-- шапка -->
   <header class="topbar">
@@ -1308,6 +1646,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
       <button type="button" class="btn btn-sm" id="btn-validate-chart" title="Проверить карту на ошибки перед сохранением">🔍 Проверить карту</button>
+      <button type="button" class="btn btn-sm btn-primary" id="btn-toggle-landscape-gui" title="Включить горизонтальный мобильный интерфейс (Landscape DAW с боковым рейлом и плавающим превью)">📱 Горизонтальный GUI</button>
       <button type="button" class="btn btn-sm" id="btn-toggle-layout-mode" title="Переключить раскладку: Вкладки (мобильная) / Плитки (ПК)">🖥 Режим: Плитки / Вкладки</button>
     </div>
   </nav>
@@ -1485,6 +1824,13 @@
 
     <!-- центр -->
     <section class="panel panel-preview">
+      <div id="ls-pip-header">
+        <span>🎬 Превью карты</span>
+        <div style="display:inline-flex;gap:4px;">
+          <button type="button" class="btn btn-xs" id="ls-pip-expand-btn" style="background:var(--bg-2);color:var(--text-primary);border-color:var(--border-hi);" title="Развернуть / свернуть микшер, транспорт и инспектор внутри окна превью">⤢ Развернуть</button>
+          <button type="button" class="btn btn-xs" id="ls-pip-close-btn" title="Скрыть окно превью (открывается кнопкой 🎬 Превью)">✕</button>
+        </div>
+      </div>
       <div class="panel-header">
         <span>Превью карты</span>
         <span style="font-size:11px;color:var(--text-secondary);">Микшер звука ниже ↓</span>
