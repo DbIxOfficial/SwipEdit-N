@@ -4,24 +4,64 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SwipEdit— Редактор карт (.swmap)</title>
+  <script id="swipedit-theme-boot">
+    (function () {
+      try {
+        var saved = localStorage.getItem('swipedit_theme_pref');
+        var sysLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+        var eff = (saved === 'light' || saved === 'dark') ? saved : (sysLight ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', eff);
+      } catch (_) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
   <style>
-    :root {
-      --bg-0: #07060e;
-      --bg-1: #0f0d1c;
-      --bg-2: #161329;
-      --bg-3: #1f1b38;
-      --border: #2c264f;
-      --border-hi: #4b3f85;
-      --text-primary: #f1f0ff;
-      --text-secondary: #a8a2cc;
-      --text-muted: #6c6594;
-      --accent: #a855f7;
-      --accent-2: #38bdf8;
-      --success: #22c55e;
-      --danger: #f43f5e;
-      --warning: #f59e0b;
-      --radius: 10px;
-      --radius-sm: 6px;
+    :root,
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --bg-0: #141414;
+      --bg-1: #1b1b1b;
+      --bg-2: #242424;
+      --bg-3: #363636;
+      --bg-3-hover: #444444;
+      --border: #323232;
+      --border-hi: #4d4d4d;
+      --text-primary: #dcdcdc;
+      --text-secondary: #9a9a9a;
+      --text-muted: #6e6e6e;
+      --accent: #16689a;
+      --accent-hover: #1c7ab3;
+      --accent-border: #3c9cd6;
+      --accent-2: #5ab0e2;
+      --sdp-gold: #facc15;
+      --success: #2ea043;
+      --danger: #d94452;
+      --warning: #d29922;
+      --radius: 5px;
+      --radius-sm: 3px;
+    }
+
+    html[data-theme="light"] {
+      color-scheme: light;
+      --bg-0: #ffffff;
+      --bg-1: #f3f3f3;
+      --bg-2: #e7e7e7;
+      --bg-3: #dadada;
+      --bg-3-hover: #cccccc;
+      --border: #c8c8c8;
+      --border-hi: #a4a4a4;
+      --text-primary: #1c1c1c;
+      --text-secondary: #525252;
+      --text-muted: #767676;
+      --accent: #156594;
+      --accent-hover: #1b78ad;
+      --accent-border: #1d80ba;
+      --accent-2: #0f689e;
+      --sdp-gold: #b45309;
+      --success: #1f883d;
+      --danger: #cf222e;
+      --warning: #9a6700;
     }
 
     * {
@@ -31,7 +71,7 @@
     }
 
     body {
-      background: var(--bg-0);
+      background: var(--bg-1);
       color: var(--text-primary);
       font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       font-size: 13px;
@@ -50,7 +90,7 @@
       justify-content: space-between;
       gap: 12px;
       padding: 10px 16px;
-      background: linear-gradient(180deg, #151129 0%, #0d0b18 100%);
+      background: var(--bg-2);
       border-bottom: 1px solid var(--border);
       flex-wrap: wrap;
     }
@@ -64,16 +104,17 @@
     .brand-badge {
       width: 32px;
       height: 32px;
-      border-radius: 8px;
+      border-radius: 7px;
       background: linear-gradient(135deg, #a855f7 0%, #ec4899 55%, #38bdf8 100%);
+      border: none;
+      box-shadow: none;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      font-size: 15px;
-      color: #fff;
+      font-size: 14px;
+      color: #ffffff;
       letter-spacing: -0.5px;
-      box-shadow: 0 0 16px rgba(168, 85, 247, 0.45);
     }
 
     .brand-title {
@@ -97,13 +138,18 @@
     .stats-bar {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 6px 14px;
+      flex-wrap: wrap;
       padding: 5px 12px;
-      background: var(--bg-2);
+      background: var(--bg-1);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       font-size: 12px;
       color: var(--text-secondary);
+    }
+
+    .stats-bar > span {
+      white-space: nowrap;
     }
 
     .stats-bar strong {
@@ -117,22 +163,23 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      padding: 7px 12px;
-      background: var(--bg-2);
+      padding: 6px 11px;
+      background: var(--bg-3);
       color: var(--text-primary);
-      border: 1px solid var(--border);
+      border: 1px solid var(--border-hi);
       border-radius: var(--radius-sm);
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 500;
       cursor: pointer;
-      transition: background 0.14s, border-color 0.14s, transform 0.08s;
+      box-shadow: none;
+      transition: background 0.1s, border-color 0.1s;
       text-decoration: none;
       white-space: nowrap;
     }
 
     .btn:hover {
-      background: var(--bg-3);
-      border-color: var(--border-hi);
+      background: var(--bg-3-hover);
+      border-color: #5a5a5a;
     }
 
     .btn:active {
@@ -140,31 +187,36 @@
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
-      border-color: #c084fc;
+      background: var(--accent);
+      border-color: var(--accent-border);
       color: #ffffff;
     }
 
     .btn-primary:hover {
-      background: linear-gradient(135deg, #8b5cf6 0%, #b666f9 100%);
-      border-color: #d8b4fe;
+      background: var(--accent-hover);
+      border-color: var(--accent-border);
     }
 
     .btn-success {
-      background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-      border-color: #34d399;
+      background: #238636;
+      border-color: var(--success);
       color: #ffffff;
     }
 
+    .btn-success:hover {
+      background: var(--success);
+      border-color: #3fb950;
+    }
+
     .btn-danger {
-      background: rgba(244, 63, 94, 0.16);
-      border-color: rgba(244, 63, 94, 0.45);
-      color: #fda4af;
+      background: rgba(217, 68, 82, 0.14);
+      border-color: rgba(217, 68, 82, 0.55);
+      color: #f08a94;
     }
 
     .btn-danger:hover {
-      background: rgba(244, 63, 94, 0.28);
-      border-color: #f43f5e;
+      background: rgba(217, 68, 82, 0.26);
+      border-color: var(--danger);
     }
 
     .btn-sm {
@@ -175,16 +227,17 @@
     .btn-xs {
       padding: 2px 6px;
       font-size: 10px;
-      background: rgba(244, 63, 94, 0.18);
-      color: #fda4af;
-      border: 1px solid rgba(244, 63, 94, 0.4);
-      border-radius: 4px;
+      background: rgba(217, 68, 82, 0.16);
+      color: #f08a94;
+      border: 1px solid rgba(217, 68, 82, 0.5);
+      border-radius: var(--radius-sm);
       cursor: pointer;
     }
 
     .active-pill {
-      background: rgba(249, 115, 22, 0.25) !important;
-      box-shadow: 0 0 10px rgba(249, 115, 22, 0.35);
+      background: rgba(210, 153, 34, 0.22) !important;
+      border-color: var(--warning) !important;
+      box-shadow: none;
     }
 
     input[type="text"],
@@ -206,7 +259,37 @@
     input[type="number"]:focus,
     select:focus,
     textarea:focus {
-      border-color: var(--accent);
+      border-color: var(--accent-border);
+    }
+
+    input[type="range"],
+    input[type="checkbox"],
+    input[type="radio"] {
+      accent-color: var(--accent-2);
+    }
+
+    /* Инлайн-код в духе egui: плоский, без переноса внутри токена */
+    code {
+      background: var(--bg-0);
+      border: 1px solid var(--border);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow-wrap: normal;
+      vertical-align: baseline;
+      line-height: 1.3;
+    }
+
+    a {
+      color: var(--accent-2);
+    }
+
+    ::selection {
+      background: var(--accent);
+      color: #ffffff;
     }
 
     input[type="color"] {
@@ -269,7 +352,7 @@
     }
 
     .section-box {
-      background: rgba(22, 19, 41, 0.65);
+      background: var(--bg-2);
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
       padding: 10px;
@@ -287,6 +370,12 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px 8px;
+    }
+
+    .section-title > span {
+      min-width: 0;
     }
 
     .field-row {
@@ -323,11 +412,11 @@
       width: 100%;
       max-width: 680px;
       aspect-ratio: 16 / 9;
-      background: #05040a;
+      background: #000000;
       border: 1px solid var(--border-hi);
-      border-radius: var(--radius);
+      border-radius: var(--radius-sm);
       overflow: hidden;
-      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.65);
+      box-shadow: none;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -364,11 +453,11 @@
       font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: 12px;
       font-weight: 700;
-      color: #38bdf8;
+      color: var(--accent-2);
       padding: 4px 8px;
       background: var(--bg-0);
       border: 1px solid var(--border);
-      border-radius: 5px;
+      border-radius: var(--radius-sm);
     }
 
     /* Крестовина 8 направлений + реверс-ноты */
@@ -399,14 +488,14 @@
     }
 
     .pad-btn.active {
-      background: rgba(168, 85, 247, 0.22);
-      border-color: var(--note-col, var(--accent));
-      box-shadow: 0 0 12px rgba(168, 85, 247, 0.35);
+      background: rgba(22, 104, 154, 0.35);
+      border-color: var(--note-col, var(--accent-border));
+      box-shadow: none;
     }
 
     .pad-center {
-      background: linear-gradient(135deg, #312e81 0%, #4c1d95 100%);
-      border-color: #818cf8;
+      background: var(--accent);
+      border-color: var(--accent-border);
       font-weight: 700;
       font-size: 11px;
     }
@@ -434,7 +523,7 @@
     .compact-table th,
     .compact-table td {
       padding: 4px 6px;
-      border-bottom: 1px solid rgba(44, 38, 79, 0.6);
+      border-bottom: 1px solid var(--border);
       text-align: left;
     }
 
@@ -444,7 +533,7 @@
     }
 
     .compact-table tr.selected-row {
-      background: rgba(168, 85, 247, 0.22);
+      background: rgba(22, 104, 154, 0.35);
     }
 
     .table-input {
@@ -455,8 +544,8 @@
     .ev-badge {
       display: inline-block;
       padding: 2px 6px;
-      border-radius: 4px;
-      color: #090812;
+      border-radius: var(--radius-sm);
+      color: #141414;
       font-weight: 800;
       font-size: 10px;
     }
@@ -490,7 +579,7 @@
       border: 1px solid var(--border-hi);
       border-radius: var(--radius-sm);
       overflow: hidden;
-      background: #0c0a18;
+      background: var(--bg-0);
     }
 
     #timeline-canvas {
@@ -509,9 +598,9 @@
       flex-wrap: wrap;
       gap: 6px;
       padding: 6px 10px;
-      background: rgba(56, 189, 248, 0.11);
-      border: 1px solid rgba(56, 189, 248, 0.45);
-      border-radius: 8px;
+      background: rgba(22, 104, 154, 0.18);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-sm);
       font-size: 11.5px;
     }
     .multi-select-actions {
@@ -526,7 +615,7 @@
       gap: 4px;
       background: var(--bg-2);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       padding: 2px 6px;
       font-size: 11px;
       color: var(--text-secondary);
@@ -562,7 +651,7 @@
     .cover-thumb {
       width: 44px;
       height: 44px;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       border: 1px solid var(--border);
       object-fit: cover;
       background: var(--bg-0);
@@ -578,7 +667,7 @@
     .insp-badge {
       font-size: 11px;
       font-weight: 700;
-      color: #c084fc;
+      color: var(--accent-2);
     }
 
     .empty-hint {
@@ -586,13 +675,32 @@
       color: var(--text-muted);
     }
 
+    /* Чекбокс + текст: всё после <input> лежит в одном .chk-text, поэтому <code> не разваливается на flex-колонки */
     .chk-label {
       display: inline-flex;
-      align-items: center;
-      gap: 5px;
+      align-items: flex-start;
+      gap: 6px;
+      line-height: 1.35;
       font-size: 11px;
       color: var(--text-secondary);
       cursor: pointer;
+      min-width: 0;
+    }
+
+    .chk-label input[type="checkbox"] {
+      margin: 2px 0 0 0;
+      flex-shrink: 0;
+      accent-color: var(--accent-2);
+      cursor: pointer;
+    }
+
+    .chk-text {
+      display: inline;
+      min-width: 0;
+    }
+
+    .chk-label:hover .chk-text {
+      color: var(--text-primary);
     }
 
     /* Сенсорный Свайп-Пад для телефонов (8 направлений) */
@@ -600,9 +708,9 @@
       position: relative;
       width: 100%;
       height: 176px;
-      border-radius: 14px;
-      background: radial-gradient(circle at center, rgba(124, 58, 237, 0.22) 0%, rgba(15, 13, 29, 0.96) 72%);
-      border: 1.5px solid var(--border-hi);
+      border-radius: var(--radius);
+      background: var(--bg-0);
+      border: 1px solid var(--border-hi);
       touch-action: none;
       user-select: none;
       display: grid;
@@ -618,8 +726,8 @@
        flex-direction: column;
       align-items: center;
       justify-content: center;
-      border-radius: 8px;
-      border: 1px dashed rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      border: 1px dashed #2e2e2e;
       font-size: 11px;
       font-weight: 700;
       color: var(--text-secondary);
@@ -632,10 +740,10 @@
     }
 
     .swipe-sector.active {
-      background: rgba(56, 189, 248, 0.25);
-      border-color: var(--accent-2);
+      background: rgba(22, 104, 154, 0.4);
+      border-color: var(--accent-border);
       color: #fff;
-      transform: scale(1.04);
+      transform: none;
     }
 
     .swipe-center-hub {
@@ -645,7 +753,7 @@
       justify-content: center;
       text-align: center;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--bg-2);
       border: 1px solid var(--border-hi);
       padding: 4px;
       font-size: 11px;
@@ -659,15 +767,15 @@
       display: inline-flex;
       gap: 4px;
       background: var(--bg-0);
-      padding: 3px;
-      border-radius: 8px;
+      padding: 2px;
+      border-radius: var(--radius);
       border: 1px solid var(--border);
     }
 
     .touch-mode-btn {
       padding: 4px 9px;
       font-size: 11px;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       border: 1px solid transparent;
       background: transparent;
       color: var(--text-secondary);
@@ -675,10 +783,15 @@
       font-weight: 600;
     }
 
+    .touch-mode-btn:hover {
+      background: var(--bg-3);
+      color: var(--text-primary);
+    }
+
     .touch-mode-btn.active {
       background: var(--accent);
       color: #fff;
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: var(--accent-border);
     }
 
     #timeline-canvas {
@@ -701,9 +814,9 @@
       padding: 7px 10px;
       font-size: 12px;
       font-weight: 700;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       border: 1px solid var(--border);
-      background: var(--bg-2);
+      background: var(--bg-3);
       color: var(--text-secondary);
       cursor: pointer;
     }
@@ -711,7 +824,7 @@
     .mob-tab-btn.active {
       background: var(--accent);
       color: #fff;
-      border-color: var(--accent-2);
+      border-color: var(--accent-border);
     }
 
     @media (max-width: 1100px) {
@@ -764,17 +877,19 @@
 
     /* Иконка в шапке в режиме RobTop (1/50) */
     .brand-badge.robtop-mode {
+      background: var(--bg-2);
       padding: 0;
       overflow: hidden;
       cursor: pointer;
-      border: 1.5px solid #facc15;
-      box-shadow: 0 0 14px rgba(250, 204, 21, 0.55);
-      transition: transform 0.14s ease, box-shadow 0.14s ease;
+      border: 1px solid #d29922;
+      box-shadow: none;
+      transition: transform 0.14s ease, border-color 0.14s ease;
     }
 
     .brand-badge.robtop-mode:hover {
-      transform: scale(1.08);
-      box-shadow: 0 0 20px rgba(250, 204, 21, 0.85);
+      transform: scale(1.06);
+      border-color: #e3b341;
+      box-shadow: none;
     }
 
     .brand-badge.robtop-mode img {
@@ -790,8 +905,7 @@
       position: fixed;
       inset: 0;
       z-index: 9999;
-      background: rgba(5, 4, 12, 0.82);
-      backdrop-filter: blur(6px);
+      background: rgba(0, 0, 0, 0.62);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -805,11 +919,11 @@
     .cubeface-modal-card {
       width: 100%;
       max-width: 380px;
-      background: linear-gradient(180deg, #1b1635 0%, #100d20 100%);
-      border: 1.5px solid var(--border-hi);
-      border-radius: 16px;
+      background: var(--bg-1);
+      border: 1px solid var(--border-hi);
+      border-radius: 6px;
       padding: 18px 20px 20px;
-      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.75);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -824,9 +938,9 @@
       right: 10px;
       width: 28px;
       height: 28px;
-      border-radius: 7px;
-      border: 1px solid var(--border);
-      background: var(--bg-2);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-hi);
+      background: var(--bg-3);
       color: var(--text-secondary);
       font-size: 14px;
       font-weight: 700;
@@ -838,12 +952,13 @@
 
     .cubeface-modal-close:hover {
       color: #fff;
-      border-color: var(--border-hi);
+      background: var(--danger);
+      border-color: var(--danger);
     }
 
     .cubeface-btn {
-      background: radial-gradient(circle, rgba(250, 204, 21, 0.22) 0%, rgba(168, 85, 247, 0.08) 70%, transparent 100%);
-      border: 2px solid rgba(250, 204, 21, 0.45);
+      background: var(--bg-2);
+      border: 2px solid rgba(210, 153, 34, 0.55);
       border-radius: 50%;
       width: 124px;
       height: 124px;
@@ -852,20 +967,20 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      transition: transform 0.08s ease, box-shadow 0.14s ease, border-color 0.14s ease;
-      box-shadow: 0 0 24px rgba(250, 204, 21, 0.25);
+      transition: transform 0.08s ease, border-color 0.14s ease, background 0.14s ease;
+      box-shadow: none;
     }
 
     .cubeface-btn:hover {
-      border-color: #facc15;
-      box-shadow: 0 0 32px rgba(250, 204, 21, 0.5);
+      border-color: #e3b341;
+      background: #2b2b2b;
       transform: scale(1.04);
     }
 
     .cubeface-btn:active,
     .cubeface-btn.pressed {
       transform: scale(0.9);
-      box-shadow: 0 0 40px rgba(56, 189, 248, 0.75);
+      border-color: var(--accent-border);
     }
 
     .cubeface-btn img {
@@ -878,9 +993,9 @@
 
     .vibecode-note {
       width: 100%;
-      background: rgba(10, 8, 20, 0.78);
+      background: var(--bg-0);
       border: 1px dashed var(--border-hi);
-      border-radius: 10px;
+      border-radius: var(--radius);
       padding: 10px 12px;
       font-size: 12px;
       line-height: 1.5;
@@ -890,7 +1005,7 @@
 
     /* Нижний блок титров и лицензии WTFPL */
     .credits-footer {
-      background: #080711;
+      background: var(--bg-0);
       border-top: 1px solid var(--border);
       padding: 16px 20px 22px;
       display: flex;
@@ -943,20 +1058,29 @@
       text-align: center;
     }
 
-    .wtfpl-box a {
+    .wtfpl-box > span {
+      display: block;
+      max-width: 100%;
+    }
+
+    .wtfpl-box > a {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       padding: 6px 12px;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.04);
+      border-radius: var(--radius-sm);
+      background: var(--bg-2);
       border: 1px solid var(--border);
       transition: border-color 0.15s, background 0.15s;
     }
 
-    .wtfpl-box a:hover {
-      border-color: var(--accent-2);
-      background: rgba(255, 255, 255, 0.08);
+    .wtfpl-box > a:hover {
+      border-color: var(--accent-border);
+      background: var(--bg-3);
+    }
+
+    .wtfpl-box span a {
+      display: inline;
     }
 
     .wtfpl-badge-img {
@@ -984,28 +1108,34 @@
       display: inline-flex;
       gap: 4px;
       background: var(--bg-0);
-      padding: 4px;
-      border-radius: 999px;
+      padding: 2px;
+      border-radius: var(--radius);
       border: 1px solid var(--border);
     }
 
     .app-tab-btn {
       padding: 6px 13px;
       font-size: 12px;
-      font-weight: 700;
-      border-radius: 999px;
-      border: none;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
       background: transparent;
       color: var(--text-secondary);
       cursor: pointer;
       white-space: nowrap;
-      transition: background 0.15s, color 0.15s, transform 0.1s;
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .app-tab-btn:hover {
+      background: var(--bg-3);
+      color: var(--text-primary);
     }
 
     .app-tab-btn.active {
-      background: linear-gradient(135deg, var(--accent), #6366f1);
+      background: var(--accent);
+      border-color: var(--accent-border);
       color: #ffffff;
-      box-shadow: 0 2px 10px rgba(168, 85, 247, 0.35);
+      box-shadow: none;
     }
 
     /* В режиме вкладок (или на экранах <= 980px) показываем только активную вкладку */
@@ -1098,24 +1228,58 @@
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      padding: 3px 9px;
-      border-radius: 999px;
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
       font-size: 11px;
       font-weight: 700;
-      cursor: help;
-      transition: all 0.18s ease;
+      white-space: nowrap;
+      pointer-events: none !important;
+      cursor: default !important;
       user-select: none;
     }
     .origin-badge-green {
-      background: rgba(34, 197, 94, 0.16);
-      border: 1px solid rgba(34, 197, 94, 0.55);
-      color: #4ade80;
+      background: rgba(46, 160, 67, 0.14);
+      border: 1px solid rgba(46, 160, 67, 0.6);
+      color: #56d364;
     }
     .origin-badge-red {
-      background: rgba(244, 63, 94, 0.18);
-      border: 1px solid rgba(244, 63, 94, 0.65);
-      color: #fb7185;
-      box-shadow: 0 0 10px rgba(244, 63, 94, 0.25);
+      background: rgba(217, 68, 82, 0.14);
+      border: 1px solid rgba(217, 68, 82, 0.6);
+      color: #f08a94;
+      box-shadow: none;
+    }
+    html[data-theme="light"] .origin-badge-green {
+      background: rgba(31, 136, 61, 0.12);
+      border-color: rgba(31, 136, 61, 0.55);
+      color: #15803d;
+    }
+    html[data-theme="light"] .origin-badge-red {
+      background: rgba(207, 34, 46, 0.11);
+      border-color: rgba(207, 34, 46, 0.55);
+      color: #b91c1c;
+    }
+    html[data-theme="light"] .btn-danger,
+    html[data-theme="light"] .btn-xs {
+      color: #b91c1c;
+      background: rgba(207, 34, 46, 0.10);
+      border-color: rgba(207, 34, 46, 0.45);
+    }
+    html[data-theme="light"] .btn-danger:hover,
+    html[data-theme="light"] .btn-xs:hover {
+      background: rgba(207, 34, 46, 0.18);
+    }
+    html[data-theme="light"] .cubeface-modal-card,
+    html[data-theme="light"] .sdp-modal-card {
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+    }
+    html[data-theme="light"] body.ls-proto-active .workspace-grid > .panel.panel-preview {
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22) !important;
+    }
+    html[data-theme="light"] body.ls-proto-active .workspace-grid > .panel.panel-meta,
+    html[data-theme="light"] body.ls-proto-active .workspace-grid > .panel.panel-fx,
+    html[data-theme="light"] body.ls-proto-active .workspace-grid > .panel.panel-stats,
+    html[data-theme="light"] body.ls-proto-active .workspace-grid > .panel.panel-notes-tab {
+      box-shadow: 6px 0 18px rgba(0, 0, 0, 0.16) !important;
     }
 
     /* Микшер громкости в превью */
@@ -1126,9 +1290,9 @@
       flex-wrap: wrap;
       gap: 10px;
       width: 100%;
-      background: var(--bg-1);
+      background: var(--bg-2);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 6px 10px;
       font-size: 11px;
     }
@@ -1158,12 +1322,12 @@
       max-width: 680px;
       max-height: 88vh;
       overflow-y: auto;
-      background: linear-gradient(180deg, #191530 0%, #0e0b1c 100%);
-      border: 1.5px solid var(--border-hi);
-      border-radius: 14px;
+      background: var(--bg-1);
+      border: 1px solid var(--border-hi);
+      border-radius: 6px;
       padding: 18px 20px;
       color: var(--text-primary);
-      box-shadow: 0 20px 55px rgba(0, 0, 0, 0.78);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
       position: relative;
       display: flex;
       flex-direction: column;
@@ -1172,14 +1336,14 @@
       line-height: 1.55;
     }
     .sdp-formula-box {
-      background: rgba(7, 6, 14, 0.75);
+      background: var(--bg-0);
       border: 1px solid var(--border);
-      border-left: 3px solid var(--accent-2);
-      border-radius: 8px;
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-sm);
       padding: 10px 12px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 11.5px;
-      color: #e2e8f0;
+      color: var(--text-primary);
       overflow-x: auto;
     }
 
@@ -1192,9 +1356,9 @@
     }
 
     .nps-kpi-card {
-      background: var(--bg-1);
+      background: var(--bg-2);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 8px 10px;
       display: flex;
       flex-direction: column;
@@ -1222,36 +1386,37 @@
 
     .nps-chart-wrap {
       width: 100%;
-      background: #090d18;
+      background: var(--bg-0);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       overflow: hidden;
       margin-top: 6px;
     }
 
     #nps-chart-canvas {
       width: 100%;
-      height: 110px;
+      height: 120px;
       display: block;
       cursor: pointer;
     }
 
     .rec-btn-active {
       background: var(--danger) !important;
-      border-color: #fda4af !important;
+      border-color: #f08a94 !important;
       color: #fff !important;
+      box-shadow: none !important;
       animation: recPulse 1s infinite alternate;
     }
 
     @keyframes recPulse {
-      from { box-shadow: 0 0 0px rgba(244, 63, 94, 0.4); }
-      to { box-shadow: 0 0 12px rgba(244, 63, 94, 0.9); }
+      from { background-color: #d94452; }
+      to { background-color: #9e2f3a; }
     }
 
 
     /* === ГОРИЗОНТАЛЬНЫЙ МОБИЛЬНЫЙ GUI (Landscape DAW + открываемое превью и дроверы) === */
     :root {
-      --ls-top-h: 46px;
+      --ls-top-h: 42px;
       --ls-rail-w: 54px;
       --ls-drawer-w: min(50vw, 440px);
     }
@@ -1261,7 +1426,7 @@
       width: 100vw !important;
       display: flex !important;
       flex-direction: column !important;
-      background: #06050c !important;
+      background: var(--bg-0) !important;
       user-select: none;
     }
     html.ls-force-rotate body.ls-proto-active {
@@ -1283,8 +1448,8 @@
       display: none;
       height: var(--ls-top-h);
       min-height: var(--ls-top-h);
-      background: rgba(13, 11, 24, 0.97);
-      border-bottom: 1px solid var(--border-hi);
+      background: var(--bg-2);
+      border-bottom: 1px solid var(--border);
       padding: 0 8px;
       align-items: center;
       justify-content: space-between;
@@ -1308,8 +1473,8 @@
       align-items: center;
       gap: 5px;
       padding: 4px 8px;
-      border-radius: 7px;
-      background: var(--bg-2);
+      border-radius: var(--radius-sm);
+      background: var(--bg-0);
       border: 1px solid var(--border);
       font-size: 11px;
       font-weight: 700;
@@ -1323,23 +1488,38 @@
       gap: 4px;
       height: 32px;
       padding: 0 9px;
-      border-radius: 7px;
-      background: var(--bg-2);
-      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-3);
+      border: 1px solid var(--border-hi);
       color: var(--text-primary);
       font-size: 11.5px;
-      font-weight: 700;
+      font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
     }
     .ls-btn:hover {
-      border-color: var(--border-hi);
-      background: var(--bg-3);
+      border-color: #5a5a5a;
+      background: var(--bg-3-hover);
     }
     .ls-btn.active, .ls-btn-accent {
-      background: linear-gradient(135deg, var(--accent), #6366f1) !important;
-      border-color: transparent !important;
+      background: var(--accent) !important;
+      border-color: var(--accent-border) !important;
       color: #fff !important;
+      box-shadow: none !important;
+    }
+    .ls-btn.active:hover, .ls-btn-accent:hover {
+      background: var(--accent-hover) !important;
+    }
+    #ls-topbar .origin-badge {
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .ls-brand-pill {
+      background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%) !important;
+      color: #ffffff !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 4px 10px !important;
     }
     #ls-rail {
       display: none;
@@ -1348,12 +1528,12 @@
       left: 0;
       bottom: 0;
       width: var(--ls-rail-w);
-      background: rgba(12, 10, 22, 0.98);
-      border-right: 1px solid var(--border-hi);
+      background: var(--bg-2);
+      border-right: 1px solid var(--border);
       flex-direction: column;
       align-items: center;
-      padding: 6px 4px;
-      gap: 5px;
+      padding: 4px 3px;
+      gap: 3px;
       z-index: 115;
       overflow-y: auto;
       scrollbar-width: none;
@@ -1364,11 +1544,13 @@
     }
     .ls-rail-btn {
       width: 44px;
-      height: 40px;
-      min-height: 40px;
-      border-radius: 9px;
-      border: 1px solid var(--border);
-      background: var(--bg-2);
+      height: 31px;
+      min-height: 28px;
+      max-height: 38px;
+      flex: 1 1 28px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-hi);
+      background: var(--bg-3);
       color: var(--text-secondary);
       display: flex;
       flex-direction: column;
@@ -1387,11 +1569,15 @@
       letter-spacing: -0.2px;
       text-transform: none;
     }
+    .ls-rail-btn:hover {
+      background: var(--bg-3-hover);
+      color: var(--text-primary);
+    }
     .ls-rail-btn.active {
-      background: linear-gradient(135deg, var(--accent), #6366f1);
+      background: var(--accent);
       color: #fff;
-      border-color: #c084fc;
-      box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+      border-color: var(--accent-border);
+      box-shadow: none;
     }
     .ls-rail-sep {
       width: 30px;
@@ -1411,12 +1597,13 @@
       border-radius: 0 !important;
       display: flex !important;
       flex-direction: column !important;
-      background: #080b14 !important;
+      background: var(--bg-1) !important;
       z-index: 20 !important;
     }
     body.ls-proto-active > footer.timeline-dock .timeline-toolbar {
       padding: 4px 10px !important;
       min-height: 34px;
+      flex-shrink: 0 !important;
     }
     body.ls-proto-active > footer.timeline-dock .timeline-toolbar > div:first-child {
       display: none !important;
@@ -1430,6 +1617,7 @@
     body.ls-proto-active > footer.timeline-dock .status-footer {
       padding: 3px 10px !important;
       font-size: 10.5px !important;
+      flex-shrink: 0 !important;
     }
     /* Оверлейная область для открываемого превью и боковых дроверов (перебивает .app-tabs-mode) */
     body.ls-proto-active > main.workspace-grid {
@@ -1445,27 +1633,42 @@
     body.ls-proto-active .workspace-grid > .panel.panel-preview,
     body.app-tabs-mode.ls-proto-active .workspace-grid > .panel.panel-preview {
       position: absolute !important;
-      right: 12px !important;
-      bottom: 28px !important;
+      right: 12px;
+      bottom: 28px;
       width: 250px !important;
       max-height: calc(100% - 36px) !important;
       pointer-events: auto !important;
-      background: rgba(15, 13, 28, 0.97) !important;
-      border: 1.5px solid var(--border-hi) !important;
-      border-radius: 12px !important;
-      box-shadow: 0 14px 38px rgba(0, 0, 0, 0.8) !important;
+      background: var(--bg-1) !important;
+      border: 1px solid var(--border-hi) !important;
+      border-radius: 6px !important;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55) !important;
       overflow-y: auto !important;
       padding: 0 !important;
       display: flex !important;
       flex-direction: column !important;
-      z-index: 100 !important;
+      z-index: 112 !important;
       transition: width 0.16s ease, transform 0.18s ease, opacity 0.18s ease;
     }
     /* Развёрнутый режим окна превью в ландшафтном GUI */
     body.ls-proto-active.ls-pip-expanded .workspace-grid > .panel.panel-preview,
     body.app-tabs-mode.ls-proto-active.ls-pip-expanded .workspace-grid > .panel.panel-preview {
       width: min(460px, calc(100vw - var(--ls-rail-w) - 24px)) !important;
-      bottom: 12px !important;
+      bottom: 12px;
+    }
+    /* Окно превью перетащено пальцем/мышью: позиция берётся из инлайновых left / top */
+    body.ls-proto-active .workspace-grid > .panel.panel-preview[data-pip-moved="1"],
+    body.app-tabs-mode.ls-proto-active .workspace-grid > .panel.panel-preview[data-pip-moved="1"],
+    body.ls-proto-active.ls-pip-expanded .workspace-grid > .panel.panel-preview[data-pip-moved="1"],
+    body.app-tabs-mode.ls-proto-active.ls-pip-expanded .workspace-grid > .panel.panel-preview[data-pip-moved="1"] {
+      right: auto !important;
+      bottom: auto !important;
+    }
+    body.ls-pip-dragging .workspace-grid > .panel.panel-preview {
+      transition: none !important;
+    }
+    body.ls-pip-dragging,
+    body.ls-pip-dragging * {
+      user-select: none !important;
     }
     body.ls-proto-active.ls-pip-hidden .workspace-grid > .panel.panel-preview,
     body.app-tabs-mode.ls-proto-active.ls-pip-hidden .workspace-grid > .panel.panel-preview {
@@ -1477,12 +1680,22 @@
       align-items: center;
       justify-content: space-between;
       padding: 6px 10px;
-      background: linear-gradient(90deg, rgba(168, 85, 247, 0.24), rgba(56, 189, 248, 0.16));
-      border-bottom: 1px solid var(--border-hi);
+      background: var(--bg-2);
+      border-bottom: 1px solid var(--border);
       font-size: 11px;
-      font-weight: 800;
-      color: #f8fafc;
+      font-weight: 700;
+      color: var(--text-primary);
       gap: 6px;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #ls-pip-header button {
+      cursor: pointer;
+    }
+    body.ls-pip-dragging #ls-pip-header {
+      cursor: grabbing;
     }
     body.ls-proto-active #ls-pip-header {
       display: flex !important;
@@ -1521,10 +1734,11 @@
       bottom: 0 !important;
       width: var(--ls-drawer-w) !important;
       max-width: calc(100vw - var(--ls-rail-w) - 12px) !important;
-      background: rgba(14, 12, 26, 0.98) !important;
-      border-right: 1.5px solid var(--border-hi) !important;
-      border-radius: 0 12px 12px 0 !important;
-      box-shadow: 14px 0 38px rgba(0, 0, 0, 0.82) !important;
+      background: var(--bg-1) !important;
+      border: none !important;
+      border-right: 1px solid var(--border-hi) !important;
+      border-radius: 0 6px 6px 0 !important;
+      box-shadow: 6px 0 18px rgba(0, 0, 0, 0.5) !important;
       overflow-y: auto !important;
       pointer-events: auto !important;
       padding: 0 !important;
@@ -1548,6 +1762,19 @@
     body.app-tabs-mode.ls-proto-active[data-ls-drawer="notes"] .workspace-grid > .panel.panel-notes-tab {
       display: flex !important;
     }
+    /* Дровер сам является скролл-контейнером: тело панели не скроллится второй раз, шапка липнет сверху */
+    body.ls-proto-active .workspace-grid > .panel > .panel-body {
+      max-height: none !important;
+      overflow: visible !important;
+      flex: 1 0 auto !important;
+    }
+    body.ls-proto-active .workspace-grid > .panel > .panel-header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: var(--bg-2);
+      flex-shrink: 0;
+    }
 
   </style>
 </head>
@@ -1556,21 +1783,22 @@
   <!-- ВЕРХНИЙ БАР И ЛЕВЫЙ РЕЙЛ ЛАНДШАФТНОГО GUI (SWME-style Landscape DAW + открываемое превью) -->
   <div id="ls-topbar">
     <div class="ls-top-group">
-      <span class="ls-pill" style="background:linear-gradient(135deg,#a855f7,#6366f1);color:#fff;border:none;">SwipEdit</span>
+      <span class="ls-pill ls-brand-pill" id="ls-brand-pill">SwipEdit</span>
       <button type="button" class="ls-btn" id="ls-btn-play" title="Пуск / Пауза (Space)">▶ Пуск</button>
       <button type="button" class="ls-btn" id="ls-btn-stop" title="В начало">⏹ Стоп</button>
       <button type="button" class="ls-btn active" id="ls-btn-preview-top" title="Открыть / скрыть окно живого превью карты">🎬 Превью</button>
       <span class="ls-pill" id="ls-time-pill" style="font-variant-numeric:tabular-nums;">00:00.000</span>
       <span class="ls-pill" title="Объективная сложность SDP v2.0 и Честные звёзды">
-        SDP: <strong id="ls-sdp-readout" style="color:#facc15;">0.0</strong> (<strong id="ls-stars-readout" style="color:#38bdf8;">0.0★</strong>)
+        SDP: <strong id="ls-sdp-readout" style="color:var(--sdp-gold);">0.0</strong> (<strong id="ls-stars-readout" style="color:var(--accent-2);">0.0★</strong>)
       </span>
+      <span id="ls-origin-badge" class="origin-badge origin-badge-green">🟢 SwipEdit</span>
     </div>
     <div class="ls-top-group">
       <button type="button" class="ls-btn" id="ls-btn-new" title="Создать новую пустую карту">🆕 Новая</button>
       <button type="button" class="ls-btn" id="ls-btn-open" title="Открыть существующий .swmap или перетащить файл на страницу">📂 Открыть</button>
       <button type="button" class="ls-btn" id="ls-btn-demo" title="Загрузить демо-карту (Tutorial — Arvicheskyy)">✨ Демо</button>
       <button type="button" class="ls-btn ls-btn-accent" id="ls-btn-save" title="Собрать и скачать готовый архив .swmap для импорта в Swipetava">💾 .swmap</button>
-      <button type="button" class="ls-btn" id="ls-btn-fullscreen" title="Полный экран + Горизонтальный разворот (Fullscreen API / 90°)">⛶ Полный экран</button>
+      <button type="button" class="ls-btn" id="ls-btn-theme-toggle" title="Переключить тему (Тёмная / Светлая, авто по системе)">🌙</button>
       <button type="button" class="ls-btn" id="ls-btn-exit-proto" title="Вернуться в классический вид редактора">🖥 Классич. вид</button>
     </div>
   </div>
@@ -1605,8 +1833,8 @@
       <span>Событий: <strong id="stat-events-count">0</strong></span>
       <span>Ср. NPS: <strong id="stat-avg-nps">0.00</strong></span>
       <span>Пик 1с: <strong id="stat-peak-nps">0</strong></span>
-      <span title="Объективная сложность чарта в баллах (без лимита)">Сложность: <strong id="stat-sdp-points" style="color:#facc15;">0 pts</strong> (<strong id="stat-auto-stars" style="color:#38bdf8;">0.0★</strong>)</span>
-      <span id="editor-origin-badge" class="origin-badge origin-badge-green" title="Подпись SwipEdit проверена: карта создана в SwipEdit">🟢 SwipEdit</span>
+      <span title="Объективная сложность чарта в баллах (без лимита)">Сложность: <strong id="stat-sdp-points" style="color:var(--sdp-gold);">0 pts</strong> (<strong id="stat-auto-stars" style="color:var(--accent-2);">0.0★</strong>)</span>
+      <span id="editor-origin-badge" class="origin-badge origin-badge-green">🟢 SwipEdit</span>
     </div>
 
     <div class="toolbar-actions">
@@ -1626,6 +1854,7 @@
         <button type="button" class="btn btn-sm lang-btn active" data-lang="ru" style="padding:4px 8px;font-size:11px;border:none;background:var(--accent);color:#fff;font-weight:800;">RU</button>
         <button type="button" class="btn btn-sm lang-btn" data-lang="en" style="padding:4px 8px;font-size:11px;border:none;background:transparent;color:var(--text-secondary);font-weight:800;">EN</button>
       </div>
+      <button type="button" class="btn btn-sm" id="btn-theme-toggle" title="Переключить тему (Тёмная / Светлая, авто по системе)">🌙 Тема</button>
       <button type="button" class="btn" id="btn-export-json" title="Скачать отдельно chart.json и meta.json">
         📄 JSON
       </button>
@@ -1650,7 +1879,7 @@
       <button type="button" class="btn btn-sm" id="btn-toggle-layout-mode" title="Переключить раскладку: Вкладки (мобильная) / Плитки (ПК)">🖥 Режим: Плитки / Вкладки</button>
     </div>
   </nav>
-  <div id="chart-validator-output" style="display:none;margin:6px 14px 0;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-2);font-size:12px;line-height:1.45;"></div>
+  <div id="chart-validator-output" style="display:none;margin:6px 14px 0;padding:8px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg-2);font-size:12px;line-height:1.45;"></div>
 
   <!-- рабочая область -->
   <main class="workspace-grid">
@@ -1740,7 +1969,7 @@
           </div>
           <label class="chk-label" style="margin-top:6px;" title="Включает обучающие паузы из 1.1 (tutorial_controller.gd) на первой обычной и первой реверс-ноте карты">
             <input type="checkbox" id="chart-tutorial-mode" />
-            🎓 Обучающие паузы из туториала (<code>"tutorial": "first_swipe"</code>)
+            <span class="chk-text">🎓 Обучающие паузы из туториала (<code>"tutorial": "first_swipe"</code>)</span>
           </label>
         </div>
 
@@ -1849,12 +2078,12 @@
             <span class="mixer-val" id="vol-bgm-val">70%</span>
           </div>
           <div class="mixer-channel" title="Включить и настроить громкость хитсаундов нот (до 200% усиления)">
-            <label class="chk-label"><input type="checkbox" id="check-hitsound" checked /> 🥁 Хитсаунд:</label>
+            <label class="chk-label"><input type="checkbox" id="check-hitsound" checked /><span class="chk-text">🥁 Хитсаунд:</span></label>
             <input type="range" id="vol-hitsound" min="0" max="200" step="5" value="110" />
             <span class="mixer-val" id="vol-hitsound-val">110%</span>
           </div>
           <div class="mixer-channel" title="Включить и настроить громкость метронома по сетке BPM (до 200% усиления)">
-            <label class="chk-label"><input type="checkbox" id="check-metronome" /> ⏱ Метроном:</label>
+            <label class="chk-label"><input type="checkbox" id="check-metronome" /><span class="chk-text">⏱ Метроном:</span></label>
             <input type="range" id="vol-metronome" min="0" max="200" step="5" value="110" />
             <span class="mixer-val" id="vol-metronome-val">110%</span>
           </div>
@@ -1884,7 +2113,8 @@
             </select>
           </div>
           <label class="chk-label" title="Показывать видео-фон (.ogv) на канвасе превью (выключи на слабом смартфоне, если тормозит декодирование видео)">
-            <input type="checkbox" id="check-video-bg-preview" checked /> 🎬 Видео-фон в превью
+            <input type="checkbox" id="check-video-bg-preview" checked />
+            <span class="chk-text">🎬 Видео-фон в превью</span>
           </label>
         </div>
 
@@ -2009,7 +2239,7 @@
           <div class="field-row" id="field-ev-pair" style="display:none;">
             <label class="chk-label">
               <input type="checkbox" id="event-autopair-check" checked />
-              Авто-выключение через (с):
+              <span class="chk-text">Авто-выключение через (с):</span>
             </label>
             <input type="number" id="event-pair-dur-input" step="0.25" min="0.1" value="4.0" style="width:80px;" />
           </div>
@@ -2068,7 +2298,7 @@
           </div>
           <label class="chk-label" style="margin:2px 0;">
             <input type="checkbox" id="hitech-auto-hud-check" checked />
-            Автоматически прятать комбо (<code>HUD_HIDE</code> перед фразой и <code>HUD_SHOW</code> после, как в Hi-Tech)
+            <span class="chk-text">Автоматически прятать комбо (<code>HUD_HIDE</code> перед фразой и <code>HUD_SHOW</code> после, как в Hi-Tech)</span>
           </label>
           <button type="button" class="btn" id="btn-insert-hitech-phrases">
             💬 Разложить фразу по битам
@@ -2143,12 +2373,12 @@
         <div class="nps-kpi-grid">
           <div class="nps-kpi-card">
             <span class="nps-kpi-label">Баллы сложности (SDP)</span>
-            <span class="nps-kpi-val" id="kpi-sdp-points" style="color:#facc15;">0.0</span>
+            <span class="nps-kpi-val" id="kpi-sdp-points" style="color:var(--sdp-gold);">0.0</span>
             <span class="nps-kpi-sub" id="kpi-sdp-rank">Без верхнего лимита</span>
           </div>
           <div class="nps-kpi-card">
             <span class="nps-kpi-label">Честные звёзды (Auto ★)</span>
-            <span class="nps-kpi-val" id="kpi-auto-stars" style="color:#38bdf8;">0.00 ★</span>
+            <span class="nps-kpi-val" id="kpi-auto-stars" style="color:var(--accent-2);">0.00 ★</span>
             <span class="nps-kpi-sub" id="kpi-manual-stars-cmp">В meta.json: 0.5 ★</span>
           </div>
           <div class="nps-kpi-card">
@@ -2158,7 +2388,7 @@
           </div>
           <div class="nps-kpi-card">
             <span class="nps-kpi-label">Пиковый NPS (Макс 1с / 3с)</span>
-            <span class="nps-kpi-val" id="kpi-peak-nps" style="color:#f43f5e;">0 / 0.00</span>
+            <span class="nps-kpi-val" id="kpi-peak-nps" style="color:var(--danger);">0 / 0.00</span>
             <span class="nps-kpi-sub" id="kpi-p95-nps">95-й перцентиль: 0.0 н/с</span>
           </div>
           <div class="nps-kpi-card">
@@ -2175,11 +2405,11 @@
 
         <div class="section-box" style="margin-top:6px;">
           <div class="section-title">
-            <span>📈 График плотности нот по секундам (клик по пику — переход к дропу)</span>
-            <span id="nps-chart-hint" style="font-size:11px;color:var(--text-secondary);">1 столбик = 1 секунда</span>
+            <span>📈 Кривая плотности чарта (клик — переход к моменту)</span>
+            <span id="nps-chart-hint" style="font-size:11px;color:var(--text-secondary);">Плавная кривая NPS</span>
           </div>
           <div class="nps-chart-wrap">
-            <canvas id="nps-chart-canvas" width="920" height="110"></canvas>
+            <canvas id="nps-chart-canvas" width="920" height="120"></canvas>
           </div>
         </div>
       </div>
@@ -2207,7 +2437,8 @@
           <button type="button" class="touch-mode-btn" data-touch-mode="erase">🧹 Ластик</button>
         </div>
         <label class="chk-label" title="Авто-синхронизация REVERSE → NOTES_FLOW_RIGHT и REVERSE_BACK → NOTES_FLOW_LEFT (с защитой 1-й секунды)">
-          <input type="checkbox" id="reverse-autoflow-check" checked /> 🔄 Авто-синк <code>REVERSE ↔ FLOW</code>
+          <input type="checkbox" id="reverse-autoflow-check" checked />
+          <span class="chk-text">🔄 Авто-синк <code>REVERSE ↔ FLOW</code></span>
         </label>
         <label for="zoom-range" style="font-size:11px;color:var(--text-secondary);">Масштаб:</label>
         <input type="range" id="zoom-range" min="40" max="600" value="180" style="width:120px;" />
@@ -2317,7 +2548,7 @@
         </div>
       </div>
 
-      <div id="sdp-live-breakdown" style="background:var(--bg-1);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11.5px;">
+      <div id="sdp-live-breakdown" style="background:var(--bg-0);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:11.5px;">
         Загрузка расчёта текущей карты...
       </div>
     </div>
